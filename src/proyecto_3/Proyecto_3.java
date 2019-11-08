@@ -15,7 +15,8 @@ public class Proyecto_3 {
      * @param args the command line arguments
      */
     public static void main(String[] args) {
-        
+        SistemaArchivos sa = new SistemaArchivos();
+        sa.ejecucion();
     }
     
 }
