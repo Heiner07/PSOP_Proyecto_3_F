@@ -8,15 +8,23 @@ package proyecto_3;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.channels.SeekableByteChannel;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Stream;
 
 /**
  *
@@ -100,15 +108,32 @@ public class SistemaArchivos {
 
     private void cargarArchivoEncabezado() throws IOException {
         String cadena;
-        List<String> instrucciones = new ArrayList<>();       
-        try (FileReader f = new FileReader(nombreDisco)) {
-            BufferedReader b = new BufferedReader(f);System.out.println(b.lines());       
-            
-            while ((cadena = b.readLine()) != null) {
-                instrucciones.add(cadena);
-                        
-            }
+        List<String> instrucciones = new ArrayList<>();    
+        RandomAccessFile archivo = null;
+        try{
+            archivo = new RandomAccessFile(nombreDisco,"r");
+        
+        }catch(IOException e){
+    
         }
+        String st = archivo.readLine();
+        while(!st.equals("0000")){
+            //System.out.println("linea: "+ st);
+            instrucciones.add(st);
+            st = archivo.readLine();     
+        }
+        
+        
+       /* Stream<String> lines = Files.lines(Paths.get(nombreDisco));
+        lines.forEach(l -> {
+            if(!l.equals("0000") && !l.equals("[/B]")){
+                instrucciones.add(l);
+                //System.out.println(l);
+            }else{return;}
+            
+        });*/
+        cargarDatos(instrucciones);
+
     }
     
     /**
@@ -121,7 +146,15 @@ public class SistemaArchivos {
         for(int i=0;i<largoInstrucciones;i++){          
             String tipoInstrucciones = instrucciones.get(i);
             if(tipoInstrucciones.equals("[/B]")){
-                break;
+                //tiene siguiente bloque
+                if(siguienteBloque>0){
+                    i = obtenerSiguienteBloque(instrucciones,siguienteBloque);
+                    if(i<0)break;
+                    i--;
+                }else{
+                    break;
+                }
+                
             }
             switch (tipoInstrucciones) {
                 case "[BS]":
@@ -155,9 +188,30 @@ public class SistemaArchivos {
             }
         
         }
+        imprimirDatos();
     }
     
-    /*private void imprimirDatos(){
+    
+    
+    private int obtenerSiguienteBloque(List<String>instrucciones, int id){
+        int largoInstrucciones = instrucciones.size();
+        String tipoInstrucciones = null;
+        for(int i=0;i<largoInstrucciones;i++){
+            tipoInstrucciones = instrucciones.get(i);
+            if(tipoInstrucciones.equals("[B]")){
+                i +=6;
+                tipoInstrucciones = instrucciones.get(i);
+                if( Integer.parseInt(tipoInstrucciones) == id){
+                    return i-6;
+                }
+            
+            }
+        
+        }
+        return -1;
+    
+    }
+    private void imprimirDatos(){
         System.out.println("TamanioDisco: "+tamanioDisco);
         System.out.println("tamanioBloque: "+tamanioBloque);
         System.out.println("cantidadBloques: "+cantidadBloques);
@@ -174,7 +228,7 @@ public class SistemaArchivos {
         
         }
     
-    }*/
+    }
     
     private int cargarGrupos(List<String> instrucciones, int indice){
         String tipoInstruccion = instrucciones.get(indice);
@@ -439,7 +493,13 @@ public class SistemaArchivos {
             }
             fw = new FileWriter(archivo);
             bw = new BufferedWriter(fw);
-            bw.write(generarContenido());
+            String contenido = generarContenido();
+            bw.write(contenido);
+            // Se calculan los bytes faltantes para el peso del archivo
+            long cantidadRelleno = (((long)tamanioDisco * 1024000)-contenido.getBytes().length)/5;
+            for(long i = 0; i < cantidadRelleno; i++){
+                bw.write("0000\n");
+            }
             bw.close();
         } catch (IOException ex) {
             Logger.getLogger(SistemaArchivos.class.getName()).log(Level.SEVERE, null, ex);
