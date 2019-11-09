@@ -294,7 +294,13 @@ public class SistemaArchivos {
                 archivo.createNewFile();
             }fw = new FileWriter(archivo);
             bw = new BufferedWriter(fw);
-            bw.write(generarContenido());
+            String contenido = generarContenido();
+            bw.write(contenido);
+            // Se calculan los bytes faltantes para el peso del archivo
+            long cantidadRelleno = (((long)tamanioDisco * 1024000)-contenido.getBytes().length)/5;
+            for(long i = 0; i < cantidadRelleno; i++){
+                bw.write("0000\n");
+            }
             bw.close();
         } catch (IOException ex) {
             Logger.getLogger(SistemaArchivos.class.getName()).log(Level.SEVERE, null, ex);
