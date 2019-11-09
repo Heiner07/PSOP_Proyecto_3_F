@@ -5,26 +5,15 @@
  */
 package proyecto_3;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
-import java.nio.channels.SeekableByteChannel;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Stream;
 
 /**
  *
@@ -94,9 +83,10 @@ public class SistemaArchivos {
      */
     private void cargarSistemaArchivos() throws IOException {
         existeDisco();
-        System.out.println("Sistema de archivos cargado");
-        sistemaCargado = true;
+        System.out.println("Cargando sistema de archivos...");
         cargarArchivoEncabezado();
+        sistemaCargado = true;
+        System.out.println("Sistema de archivos cargado");
     }
 
     private void existeDisco() {
@@ -116,11 +106,11 @@ public class SistemaArchivos {
         }catch(IOException e){
     
         }
-        String st = archivo.readLine();
-        while(!st.equals("0000")){
+        String st;// = archivo.readLine();
+        while((st = archivo.readLine()) != null){
             //System.out.println("linea: "+ st);
             instrucciones.add(st);
-            st = archivo.readLine();     
+            //st = archivo.readLine();
         }
         
         
@@ -191,8 +181,6 @@ public class SistemaArchivos {
         imprimirDatos();
     }
     
-    
-    
     private int obtenerSiguienteBloque(List<String>instrucciones, int id){
         int largoInstrucciones = instrucciones.size();
         String tipoInstrucciones = null;
@@ -209,8 +197,8 @@ public class SistemaArchivos {
         
         }
         return -1;
-    
     }
+    
     private void imprimirDatos(){
         System.out.println("TamanioDisco: "+tamanioDisco);
         System.out.println("tamanioBloque: "+tamanioBloque);
@@ -256,8 +244,8 @@ public class SistemaArchivos {
             }       
         }
         return indice;
-    
     }
+    
     private int cargarUsuarios(List<String> instrucciones, int indice){
         String tipoInstruccion = instrucciones.get(indice);
         int id = 0;
@@ -277,15 +265,13 @@ public class SistemaArchivos {
         }return indice;
     }
     
-    
     private void cargarBloquesLibres(String instruccionBloques){
         String[] bloquesSeparados = instruccionBloques.split(",");
         for(int i=0;i<bloquesSeparados.length;i++){
             bloquesLibres.add(Integer.parseInt(bloquesSeparados[i])); 
         }
-
-    
     }
+    
     private void manejadorComandos(String comando) {
         switch (comando) {
             case "format":
@@ -381,137 +367,258 @@ public class SistemaArchivos {
         System.out.println("Formato creado");
     }
 
-    private void comandoUserAdd(Boolean root) {
+    /**
+     * Se encarga de ejecutar el comando "useradd". Si la variable es root,...
+     * ...es el usuario root, por lo que solo pide la contraseña, sino, esta...
+     * ...agregando un usuario normal.
+     * @param root 
+     */
+    private void comandoUserAdd(Boolean root){
         String nombreUsuario, contrasenia, contraseniaTemp;
-        if (root) {
+        if(root){
             nombreUsuario = "root";
-        } else {
+        }else{
             System.out.print("Ingrese el nombre completo: ");
             nombreUsuario = entradaComandos.nextLine();
         }
-        do {
-            System.out.print("Ingrese la contraseña de " + nombreUsuario + ": ");
+        do{
+            System.out.print("Ingrese la contraseña de "+nombreUsuario+": ");
             contrasenia = entradaComandos.nextLine();
-            if (!contrasenia.isEmpty()) {
+            if(!contrasenia.isEmpty()){
                 System.out.print("Confirme la contraseña: ");
                 contraseniaTemp = entradaComandos.nextLine();
-                if (!contrasenia.equals(contraseniaTemp)) {
+                if(!contrasenia.equals(contraseniaTemp)){
                     System.out.println("Las contraseñas deben ser iguales");
                 }
-            } else {
+            }else{
                 contraseniaTemp = null;
                 System.out.println("Ingrese un valor válido.");
             }
-        } while (!contrasenia.equals(contraseniaTemp));
-
-        if (root) {
+        }while(!contrasenia.equals(contraseniaTemp));
+        
+        if(root){
             usuarioActual = new Usuario(0, nombreUsuario, contrasenia);
-        } else {
-
+        }else{
+            Usuario usuarioNuevo = new Usuario(usuarios.size(), nombreUsuario, contrasenia);
+            usuarios.add(usuarioNuevo);
+            if(escribirUsuario(usuarioNuevo)){
+                System.out.println("¡Usuario agregado!");
+            }else{
+                System.out.println("Error al agregar el usuario");
+            }
         }
     }
-
-    private String generarContenido() {
-        int cantidadBloques = (tamanioDisco * 1024) / 512;
-        int tamanioBloques = 512;
+    
+    /**
+     * Genera el string, del usuario nuevo, utilizado para agregar un usuario...
+     * ...al archivo (Disco)
+     * @param usuario
+     * @return String
+     */
+    private String generarContenidoUsuario(Usuario usuario){
+        String cUsuario
+                = "[U]\n"
+                + "[Id]\n"
+                + usuario.id+"\n"
+                + "[/Id]\n"
+                + "[N]\n"
+                + usuario.nombre+"\n"
+                + "[/N]\n"
+                + "[Con]\n"
+                + usuario.contasenia+"\n"
+                + "[/Con]\n"
+                + "[/U]";
+        return cUsuario;
+    }
+    
+    /**
+     * Escribe un usuario en el archivo (disco).
+     * Genera la información del usuario por agregar y determina el bloque en...
+     * ...el que lo va a escribir(por el momento solo el cero). Obtiene el...
+     * ...bloque, lo edita, se limpia toda la sección del bloque en el archivo..
+     * ...y carga el nuevo en la misma sección ya con el usuario.
+     * @param usuario 
+     * @return Boolean
+     */
+    private Boolean escribirUsuario(Usuario usuario){
+        String contenido = generarContenidoUsuario(usuario);
+        RandomAccessFile archivo;
+        Boolean concatenar = false;
+        String bloque = "", linea, bloqueNuevo;
+        int limiteBloque;
+        try {
+            archivo = new RandomAccessFile(nombreDisco, "rw");
+            // Ciclo para buscar el bloque correspondiente
+            while((linea = archivo.readLine()) != null){
+                // Si la linea es "[B]", empiezo a leer y generar un bloque
+                if(linea.startsWith("[B]")){
+                    concatenar = true;
+                }// Si es "[/B], termino de leer un bloque y lo analizo"
+                else if((linea.startsWith("[/B]"))){
+                    bloque += linea+"\n";
+                    concatenar = false;
+                    if(hayEspacioEnBloque(bloque, contenido)){
+                        // Limpio el bloque que voy a actualizar
+                        archivo.seek(0); // Cero es el inicio del bloque 0
+                        limiteBloque = tamanioBloque - 1; // Menos uno para agregar un salto de linea
+                        for(int i = 0; i < limiteBloque; i++){
+                            archivo.writeBytes(".");
+                        }
+                        archivo.writeBytes("\n");
+                        // Genero el bloque nuevo con el usuario donde corresponde
+                        bloqueNuevo = agregarUsuarioCadena(bloque, contenido);
+                        archivo.seek(0); // Cero es el inicio del bloque 0
+                        archivo.writeBytes(bloqueNuevo);
+                        break; // Importante para que no recorra todo el archivo.
+                    }
+                    bloque = "";
+                }
+                if(concatenar){
+                    bloque += linea+"\n";
+                }
+            }
+            archivo.close();
+            return true;
+        } catch (IOException ex) {
+            return false;
+        }
+    }
+    
+    /**
+     * Indica si hay espacio para el contenido en el bloque.
+     * De acuerdo con el tamaño de bloque.
+     * @param bloque
+     * @param contenido
+     * @return Boolean
+     */
+    private Boolean hayEspacioEnBloque(String bloque, String contenido){
+        String bloqueModificado = bloque + contenido + "\n";
+        return bloqueModificado.getBytes().length <= tamanioBloque;
+    }
+    
+    /**
+     * Agrega la información de un usuario en el bloque indicado
+     * @param bloque
+     * @param usuario
+     * @return String
+     */
+    private String agregarUsuarioCadena(String bloque, String usuario){
+        String[] lineasBloque = bloque.split("\n");
+        int cantidadLineas = lineasBloque.length;
+        String cadenaFinal = "", linea;
+        for(int i = 0; i < cantidadLineas; i++){
+            linea = lineasBloque[i];
+            if(linea.equals("[/4]")){
+                cadenaFinal += usuario + "\n";
+            }
+            cadenaFinal += linea + "\n";
+        }return cadenaFinal;
+    }
+    
+    /**
+     * Genera el contenido base del sistema de archivos.
+     * @return String
+     */
+    private String generarContenido(){
+        cantidadBloques = (tamanioDisco * 1024) / 512;
+        tamanioBloque = 512 * 1024;
         String cBloquesLibres = "1";
-        for (int i = 1; i < cantidadBloques; i++) {
+        for(int i = 1; i < cantidadBloques; i++){
             cBloquesLibres += ",0";
         }
         String bloquesDisco
-                = "[B]\n"
-                + "[BS]\n"
-                + "-1\n"
-                + "[/BS]\n"
+                = "[B]\n[BS]\n-1\n[/BS]\n"
                 + "[I]\n"
-                + "[Id]\n"
-                + "0\n"
-                + "[/Id]\n"
-                + "[1]\n"
-                + tamanioDisco + "\n"
-                + "[/1]\n"
-                + "[2]\n"
-                + cantidadBloques + "\n"
-                + tamanioBloques + "\n"
-                + "[/2]\n"
-                + "[3]\n"
-                + cBloquesLibres + "\n"
-                + "[/3]\n"
+                + "[Id]\n0\n[/Id]\n"
+                + "[1]\n"+tamanioDisco+"\n[/1]\n"
+                + "[2]\n"+cantidadBloques+"\n" +tamanioBloque+"\n" +"[/2]\n"
+                + "[3]\n"+cBloquesLibres+"\n[/3]\n"
                 + "[4]\n"
                 + "[U]\n"
-                + "[Id]\n"
-                + "0\n"
-                + "[/Id]\n"
-                + "[N]\n"
-                + "root\n"
-                + "[/N]\n"
-                + "[Con]\n"
-                + usuarioActual.contasenia + "\n"
-                + "[/Con]\n"
+                + "[Id]\n0\n[/Id]\n"
+                + "[N]\nroot\n[/N]\n"
+                + "[Con]\n"+usuarioActual.contasenia+"\n[/Con]\n"
                 + "[/U]\n"
                 + "[/4]\n"
                 + "[5]\n"
                 + "[GU]\n"
-                + "[Id]\n"
-                + "0\n"
-                + "[/Id]\n"
-                + "[N]\n"
-                + "GrupoRoot\n"
-                + "[/N]\n"
+                + "[Id]\n0\n[/Id]\n"
+                + "[N]\nGrupoRoot\n[/N]\n"
                 + "[U]\n"
-                + "[Id]\n"
-                + "0\n"
-                + "[/Id]\n"
+                + "[Id]\n0\n[/Id]\n"
                 + "[/U]\n"
                 + "[/GU]\n"
                 + "[/5]\n"
                 + "[/I]\n"
                 + "[/B]\n";
-        for (int i = 1; i < cantidadBloques; i++) {
+        for(int i = 1; i < cantidadBloques; i++){
             bloquesDisco
                     += "[B]\n"
-                    + "[BS]\n"
-                    + "-1\n"
-                    + "[/BS]\n"
+                    + "[BS]\n-1\n[/BS]\n"
                     + "[I]\n"
-                    + "[Id]\n"
-                    + i + "\n"
-                    + "[/Id]\n"
+                    + "[Id]\n"+i+"\n[/Id]\n"
                     + "[/I]\n"
                     + "[/B]\n";
         }
         return bloquesDisco;
     }
-
-    private void crearSistemaArchivos() {
-        File archivo = new File(nombreDisco);
-        FileWriter fw;
-        BufferedWriter bw;
+    
+    /**
+     * Se encarga de crear el archivo (Disco) y darle el formato correspondiente
+     */
+    private void crearSistemaArchivos(){
+        File archivoTemp = new File(nombreDisco); // Usado para borrar el anterior
+        RandomAccessFile archivo;
+        String contenido = generarContenido();
+        String linea;
+        String lineaPorAgregar = "";
+        List<String> lineas = Arrays.asList(contenido.split("\n"));
+        int indiceContenido = 0;
+        int tamanioRestanteBloque;
         try {
-            if (!archivo.exists()) {
-                archivo.createNewFile();
+            archivoTemp.delete(); // Se borra el archivo anterior (si existe)
+            archivo = new RandomAccessFile(nombreDisco, "rw"); // Se crea el nuevo
+            archivo.setLength(tamanioDisco * 1000000); // Se asigna el tamaño
+            archivo.seek(0); // Se asigna el puntero al inicio del archivo
+            // Se recorre cada bloque creado, para asignarle en el archivo el tamaño
+            while(indiceContenido < lineas.size()){
+                linea = lineas.get(indiceContenido);
+                switch (linea) {
+                    case "[B]": // Se  empieza a formar cada bloque
+                        lineaPorAgregar = ((indiceContenido > 0)? "\n": "") +linea;
+                        break;
+                    case "[/B]": // Cuando se tiene un bloque leido
+                        lineaPorAgregar += linea + "\n";
+                        // Se escribe el bloque
+                        archivo.writeBytes(lineaPorAgregar);
+                        // Se calcula el tamanio restante en el bloque.
+                        tamanioRestanteBloque = tamanioBloque - lineaPorAgregar.getBytes().length;
+                        // Se mueve el puntero del archivo hasta el inicio donde debe ir el siguiente bloque
+                        archivo.seek(archivo.getFilePointer() + tamanioRestanteBloque - 1);
+                        break;
+                    default: // Se va formando cada bloque
+                        lineaPorAgregar += linea;
+                        break;
+                }lineaPorAgregar += "\n";
+                indiceContenido++;
             }
-            fw = new FileWriter(archivo);
-            bw = new BufferedWriter(fw);
-            String contenido = generarContenido();
-            bw.write(contenido);
-            // Se calculan los bytes faltantes para el peso del archivo
-            long cantidadRelleno = (((long)tamanioDisco * 1024000)-contenido.getBytes().length)/5;
-            for(long i = 0; i < cantidadRelleno; i++){
-                bw.write("0000\n");
-            }
-            bw.close();
+            archivo.close();
         } catch (IOException ex) {
             Logger.getLogger(SistemaArchivos.class.getName()).log(Level.SEVERE, null, ex);
         }
-
+        
     }
-
-    private Boolean esNumero(String numeroTemp) {
-        try {
+    
+    /**
+     * Verifica si un string es número positivo
+     * @param numeroTemp
+     * @return Boolean
+     */
+    private Boolean esNumero(String numeroTemp){
+        try{
             int numero = Integer.valueOf(numeroTemp);
             return numero > 0;
-        } catch (NumberFormatException e) {
+        }catch(NumberFormatException e){
             return false;
         }
     }
