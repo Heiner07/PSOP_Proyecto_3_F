@@ -13,7 +13,7 @@ public class Usuario {
     
     int id;
     String nombre;
-    String contasenia;
+    String contrasenia;
 
     /**
      * 
@@ -24,6 +24,6 @@ public class Usuario {
     public Usuario(int id, String nombre, String contasenia) {
         this.id = id;
         this.nombre = nombre;
-        this.contasenia = contasenia;
+        this.contrasenia = contasenia;
     }
 }
