@@ -108,41 +108,32 @@ public class SistemaArchivos {
         }
         String st;// = archivo.readLine();
         boolean siguienteBloque = false;
-        archivo.seek(51);
-        tamanioBloque =  Integer.parseInt(archivo.readLine());
-        archivo.seek(0);
-        while((st = archivo.readLine()) != null){                                        
-            if(siguienteBloque){
-                if(!st.equals("-1")){
-                    System.out.println(st);
-                    int numSig = Integer.parseInt(st);
-                   // archivo.seek(0);                                      
-                    archivo.seek(numSig * tamanioBloque+1);              
-                    System.out.println(archivo.readLine());
-                   
-                
-                } siguienteBloque  = false;
-                
-                
-            }
-            
-            instrucciones.add(st);
-            if(st.equals("[BS]")){
+        int numSig = -1;
+        while((st = archivo.readLine()) != null){    
+            if(siguienteBloque){                
+                numSig = Integer.parseInt(st);
+                siguienteBloque = false;
+            }else
+            if(st.equals(EstructuraSistemaArchivos.INICIO_BLOQUE_SIGUIENTE)){
                 siguienteBloque= true;
                 
-            }
-            //st = archivo.readLine();
+            }else if(st.equals(EstructuraSistemaArchivos.FINAL_BLOQUE)){
+                if(numSig == -1){
+                    instrucciones.add(st);                               
+                    break;               
+                }else{                                     
+                    archivo.seek(numSig * (tamanioBloque - numSig));   
+                    numSig = -1;
+                }
+            }else if(st.equals(EstructuraSistemaArchivos.INICIO_NUMERO_BLOQUES)){
+                st = archivo.readLine();
+                instrucciones.add(st);
+                st = archivo.readLine();
+                tamanioBloque = Integer.parseInt(st);           
+            }           
+            instrucciones.add(st);
         }
         
-        
-       /* Stream<String> lines = Files.lines(Paths.get(nombreDisco));
-        lines.forEach(l -> {
-            if(!l.equals("0000") && !l.equals("[/B]")){
-                instrucciones.add(l);
-                //System.out.println(l);
-            }else{return;}
-            
-        });*/
         cargarDatos(instrucciones);
 
     }
@@ -153,44 +144,29 @@ public class SistemaArchivos {
      */
     private void cargarDatos(List<String> instrucciones){
         int largoInstrucciones = instrucciones.size();
-        int siguienteBloque = -1;
         for(int i=0;i<largoInstrucciones;i++){          
-            String tipoInstrucciones = instrucciones.get(i);
-            if(tipoInstrucciones.equals("[/B]")){
-                //tiene siguiente bloque
-                if(siguienteBloque>0){
-                    i = obtenerSiguienteBloque(instrucciones,siguienteBloque);
-                    if(i<0)break;
-                    i--;
-                }else{
-                    break;
-                }
-                
-            }
+            String tipoInstrucciones = instrucciones.get(i);          
             switch (tipoInstrucciones) {
-                case "[BS]":
-                    i++;
-                    siguienteBloque = Integer.parseInt(instrucciones.get(i));
-                    break;
-                case "[1]":
+                
+                case EstructuraSistemaArchivos.INICIO_TAMANIO:
                     i++;
                     tamanioDisco = Integer.parseInt(instrucciones.get(i));
                     break;
-                case "[2]":
+                case EstructuraSistemaArchivos.INICIO_NUMERO_BLOQUES:
                     i++;
                     cantidadBloques = Integer.parseInt(instrucciones.get(i));
                     i++;
                     tamanioBloque = Integer.parseInt(instrucciones.get(i));
                     break;
-                case "[3]":
+                case EstructuraSistemaArchivos.INICIO_BLOQUES_LIBRES:
                     i++;
                     cargarBloquesLibres(instrucciones.get(i));
                     break;
-                case "[4]":
+                case EstructuraSistemaArchivos.INICIO_BLOQUE_USUARIOS:
                     i++;
                     i = cargarUsuarios(instrucciones,i);                   
                     break;
-                case "[5]":
+                case EstructuraSistemaArchivos.INICIO_BLOQUE_G_USUARIOS:
                     i++;
                     i = cargarGrupos(instrucciones,i);                   
                     break;
@@ -207,7 +183,7 @@ public class SistemaArchivos {
         String tipoInstrucciones = null;
         for(int i=0;i<largoInstrucciones;i++){
             tipoInstrucciones = instrucciones.get(i);
-            if(tipoInstrucciones.equals("[B]")){
+            if(tipoInstrucciones.equals(EstructuraSistemaArchivos.INICIO_BLOQUE)){
                 i +=6;
                 tipoInstrucciones = instrucciones.get(i);
                 if( Integer.parseInt(tipoInstrucciones) == id){
@@ -243,18 +219,18 @@ public class SistemaArchivos {
         String tipoInstruccion = instrucciones.get(indice);
         int id = 0;
         String nombre = null;
-        while(!tipoInstruccion.equals("[/5]")){
+        while(!tipoInstruccion.equals(EstructuraSistemaArchivos.FINAL_BLOQUE_G_USUARIOS)){
             tipoInstruccion = instrucciones.get(indice);
-            if(tipoInstruccion.equals("[GU]")){
+            if(tipoInstruccion.equals(EstructuraSistemaArchivos.INICIO_G_USUARIO)){
                 indice+=2;
                 id = Integer.parseInt(instrucciones.get(indice));
                 indice+=3;
                 nombre = instrucciones.get(indice);
                 indice++;             
                 List<Usuario> usuariosGrupos = new ArrayList<>();
-                while(!instrucciones.get(indice).equals("[/GU]")){
+                while(!instrucciones.get(indice).equals(EstructuraSistemaArchivos.FINAL_G_USUARIO)){
                     tipoInstruccion = instrucciones.get(indice);
-                    if(tipoInstruccion.equals("[Id]")){
+                    if(tipoInstruccion.equals(EstructuraSistemaArchivos.INICIO_ID)){
                         indice++;
                         usuariosGrupos.add(new Usuario(Integer.parseInt(instrucciones.get(indice)),null,null));                   
                     }indice++;
@@ -271,9 +247,9 @@ public class SistemaArchivos {
         String tipoInstruccion = instrucciones.get(indice);
         int id = 0;
         String nombre = null,contrasenia = null;
-        while(!tipoInstruccion.equals("[/4]")){
+        while(!tipoInstruccion.equals(EstructuraSistemaArchivos.FINAL_BLOQUE_USUARIOS)){
             tipoInstruccion = instrucciones.get(indice);
-            if(tipoInstruccion.equals("[U]")){
+            if(tipoInstruccion.equals(EstructuraSistemaArchivos.INICIO_USUARIO)){
                 indice+=2;
                 id = Integer.parseInt(instrucciones.get(indice));
                 indice+=3;
