@@ -107,9 +107,30 @@ public class SistemaArchivos {
     
         }
         String st;// = archivo.readLine();
-        while((st = archivo.readLine()) != null){
-            //System.out.println("linea: "+ st);
+        boolean siguienteBloque = false;
+        archivo.seek(51);
+        tamanioBloque =  Integer.parseInt(archivo.readLine());
+        archivo.seek(0);
+        while((st = archivo.readLine()) != null){                                        
+            if(siguienteBloque){
+                if(!st.equals("-1")){
+                    System.out.println(st);
+                    int numSig = Integer.parseInt(st);
+                   // archivo.seek(0);                                      
+                    archivo.seek(numSig * tamanioBloque+1);              
+                    System.out.println(archivo.readLine());
+                   
+                
+                } siguienteBloque  = false;
+                
+                
+            }
+            
             instrucciones.add(st);
+            if(st.equals("[BS]")){
+                siguienteBloque= true;
+                
+            }
             //st = archivo.readLine();
         }
         
