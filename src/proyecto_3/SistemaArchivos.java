@@ -86,7 +86,7 @@ public class SistemaArchivos {
         System.out.println("Cargando sistema de archivos...");
         cargarArchivoEncabezado();
         sistemaCargado = true;
-        System.out.println("Sistema de archivos cargado");
+        System.out.println("¡Sistema de archivos cargado!");
     }
 
     private void existeDisco() {
@@ -225,7 +225,7 @@ public class SistemaArchivos {
         System.out.println("tamanioBloque: "+tamanioBloque);
         System.out.println("cantidadBloques: "+cantidadBloques);
         for(Usuario us:usuarios){
-            System.out.println("usuario: "+us.nombre+" contra: "+us.contasenia);
+            System.out.println("usuario: "+us.nombre+" contra: "+us.contrasenia);
         
         }
         for(GrupoUsuarios gu:gruposUsuarios){
@@ -381,11 +381,12 @@ public class SistemaArchivos {
             System.out.print("Ingrese el tamaño del disco en MB: ");
             tamanioDiscoTemp = entradaComandos.nextLine();
         } while (!esNumero(tamanioDiscoTemp));
-
+        
+        
         tamanioDisco = Integer.valueOf(tamanioDiscoTemp);
         comandoUserAdd(true);
         crearSistemaArchivos();
-        System.out.println("Formato creado");
+        System.out.println("¡Formato creado!");
     }
 
     /**
@@ -431,28 +432,6 @@ public class SistemaArchivos {
     }
     
     /**
-     * Genera el string, del usuario nuevo, utilizado para agregar un usuario...
-     * ...al archivo (Disco)
-     * @param usuario
-     * @return String
-     */
-    private String generarContenidoUsuario(Usuario usuario){
-        String cUsuario
-                = "[U]\n"
-                + "[Id]\n"
-                + usuario.id+"\n"
-                + "[/Id]\n"
-                + "[N]\n"
-                + usuario.nombre+"\n"
-                + "[/N]\n"
-                + "[Con]\n"
-                + usuario.contasenia+"\n"
-                + "[/Con]\n"
-                + "[/U]";
-        return cUsuario;
-    }
-    
-    /**
      * Escribe un usuario en el archivo (disco).
      * Genera la información del usuario por agregar y determina el bloque en...
      * ...el que lo va a escribir(por el momento solo el cero). Obtiene el...
@@ -462,7 +441,7 @@ public class SistemaArchivos {
      * @return Boolean
      */
     private Boolean escribirUsuario(Usuario usuario){
-        String contenido = generarContenidoUsuario(usuario);
+        String contenido = EstructuraSistemaArchivos.generarContenidoUsuario(usuario);
         RandomAccessFile archivo;
         Boolean concatenar = false;
         String bloque = "", linea, bloqueNuevo;
@@ -472,10 +451,10 @@ public class SistemaArchivos {
             // Ciclo para buscar el bloque correspondiente
             while((linea = archivo.readLine()) != null){
                 // Si la linea es "[B]", empiezo a leer y generar un bloque
-                if(linea.startsWith("[B]")){
+                if(linea.startsWith(EstructuraSistemaArchivos.INICIO_BLOQUE)){
                     concatenar = true;
                 }// Si es "[/B], termino de leer un bloque y lo analizo"
-                else if((linea.startsWith("[/B]"))){
+                else if(linea.startsWith(EstructuraSistemaArchivos.FINAL_BLOQUE)){
                     bloque += linea+"\n";
                     concatenar = false;
                     if(hayEspacioEnBloque(bloque, contenido)){
@@ -483,7 +462,7 @@ public class SistemaArchivos {
                         archivo.seek(0); // Cero es el inicio del bloque 0
                         limiteBloque = tamanioBloque - 1; // Menos uno para agregar un salto de linea
                         for(int i = 0; i < limiteBloque; i++){
-                            archivo.writeBytes(".");
+                            archivo.writeBytes(EstructuraSistemaArchivos.CARACTER_RELLENO);
                         }
                         archivo.writeBytes("\n");
                         // Genero el bloque nuevo con el usuario donde corresponde
@@ -529,7 +508,7 @@ public class SistemaArchivos {
         String cadenaFinal = "", linea;
         for(int i = 0; i < cantidadLineas; i++){
             linea = lineasBloque[i];
-            if(linea.equals("[/4]")){
+            if(linea.equals(EstructuraSistemaArchivos.FINAL_BLOQUE_USUARIOS)){
                 cadenaFinal += usuario + "\n";
             }
             cadenaFinal += linea + "\n";
@@ -547,40 +526,9 @@ public class SistemaArchivos {
         for(int i = 1; i < cantidadBloques; i++){
             cBloquesLibres += ",0";
         }
-        String bloquesDisco
-                = "[B]\n[BS]\n-1\n[/BS]\n"
-                + "[I]\n"
-                + "[Id]\n0\n[/Id]\n"
-                + "[1]\n"+tamanioDisco+"\n[/1]\n"
-                + "[2]\n"+cantidadBloques+"\n" +tamanioBloque+"\n" +"[/2]\n"
-                + "[3]\n"+cBloquesLibres+"\n[/3]\n"
-                + "[4]\n"
-                + "[U]\n"
-                + "[Id]\n0\n[/Id]\n"
-                + "[N]\nroot\n[/N]\n"
-                + "[Con]\n"+usuarioActual.contasenia+"\n[/Con]\n"
-                + "[/U]\n"
-                + "[/4]\n"
-                + "[5]\n"
-                + "[GU]\n"
-                + "[Id]\n0\n[/Id]\n"
-                + "[N]\nGrupoRoot\n[/N]\n"
-                + "[U]\n"
-                + "[Id]\n0\n[/Id]\n"
-                + "[/U]\n"
-                + "[/GU]\n"
-                + "[/5]\n"
-                + "[/I]\n"
-                + "[/B]\n";
-        for(int i = 1; i < cantidadBloques; i++){
-            bloquesDisco
-                    += "[B]\n"
-                    + "[BS]\n-1\n[/BS]\n"
-                    + "[I]\n"
-                    + "[Id]\n"+i+"\n[/Id]\n"
-                    + "[/I]\n"
-                    + "[/B]\n";
-        }
+        String bloquesDisco = EstructuraSistemaArchivos.obtenerContenidoInicial(
+                tamanioDisco, cantidadBloques, tamanioBloque, cBloquesLibres,
+                usuarioActual.contrasenia);
         return bloquesDisco;
     }
     
@@ -605,10 +553,10 @@ public class SistemaArchivos {
             while(indiceContenido < lineas.size()){
                 linea = lineas.get(indiceContenido);
                 switch (linea) {
-                    case "[B]": // Se  empieza a formar cada bloque
+                    case EstructuraSistemaArchivos.INICIO_BLOQUE: // Se  empieza a formar cada bloque
                         lineaPorAgregar = ((indiceContenido > 0)? "\n": "") +linea;
                         break;
-                    case "[/B]": // Cuando se tiene un bloque leido
+                    case EstructuraSistemaArchivos.FINAL_BLOQUE: // Cuando se tiene un bloque leido
                         lineaPorAgregar += linea + "\n";
                         // Se escribe el bloque
                         archivo.writeBytes(lineaPorAgregar);
