@@ -13,16 +13,19 @@ public class Usuario {
     
     int id;
     String nombre;
+    String nombreCompleto;
     String contrasenia;
 
     /**
      * 
      * @param id
+     * @param nombreCompleto
      * @param nombre
      * @param contasenia 
      */
-    public Usuario(int id, String nombre, String contasenia) {
+    public Usuario(int id, String nombreCompleto, String nombre, String contasenia) {
         this.id = id;
+        this.nombreCompleto = nombreCompleto;
         this.nombre = nombre;
         this.contrasenia = contasenia;
     }

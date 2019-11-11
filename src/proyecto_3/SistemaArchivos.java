@@ -229,7 +229,7 @@ public class SistemaArchivos {
                     tipoInstruccion = instrucciones.get(indice);
                     if(tipoInstruccion.equals(EstructuraSistemaArchivos.INICIO_ID)){
                         indice++;
-                        usuariosGrupos.add(new Usuario(Integer.parseInt(instrucciones.get(indice)),null,null));                   
+                        usuariosGrupos.add(new Usuario(Integer.parseInt(instrucciones.get(indice)),null,null,null));                   
                     }indice++;
                 
                 }
@@ -254,7 +254,7 @@ public class SistemaArchivos {
                 indice+=3;
                 nombre = instrucciones.get(indice);
                 indice+=3;
-                usuarios.add(new Usuario(id,nombre,contrasenia));
+                usuarios.add(new Usuario(id,"TEMP_NOMBRECOMPLETO",nombre,contrasenia));
             }
         }return indice;
     }
@@ -266,13 +266,15 @@ public class SistemaArchivos {
         }
     }
     
-    private void manejadorComandos(String comando) {
+    private void manejadorComandos(String linea) {
+        String[] elementos = linea.split(" ");
+        String comando = elementos[0];
         switch (comando) {
             case "format":
                 comandoFormat();
                 break;
             case "useradd":
-                comandoUserAdd(false);
+                comandoUserAdd(elementos,false);
                 break;
             case "groupadd":
                 // llamado al método
@@ -357,7 +359,7 @@ public class SistemaArchivos {
         
         
         tamanioDisco = Integer.valueOf(tamanioDiscoTemp);
-        comandoUserAdd(true);
+        comandoUserAdd(null, true);
         crearSistemaArchivos();
         System.out.println("¡Formato creado!");
     }
@@ -368,47 +370,78 @@ public class SistemaArchivos {
      * ...agregando un usuario normal.
      * @param root 
      */
-    private void comandoUserAdd(Boolean root){
-        String nombreUsuario, contrasenia, contraseniaTemp;
-        if(root){
-            nombreUsuario = "root";
-        }else{
-            while(true){
-                System.out.print("Ingrese el nombre completo: ");
-                nombreUsuario = entradaComandos.nextLine();
-                if(usuarioRepetido(nombreUsuario)){
-                    System.out.println("Error, nombre de usuario ya existe");
-                }else{
+    private void comandoUserAdd(String[] elementos, Boolean root){
+        if((!root && elementos.length > 1) || root){
+            String nombre, nombreUsuario, contrasenia, contraseniaTemp;
+            if(root){
+                nombreUsuario = "root";
+            }else{
+                nombreUsuario = elementos[1];
+            }
+            if(!usuarioRepetido(nombreUsuario)){
+                while(true){
+                    System.out.print("Ingrese el nombre completo: ");
+                    nombre = entradaComandos.nextLine();
+                    /*if(usuarioRepetido(nombre)){
+                        System.out.println("Error, ingrese un nombre válido");
+                    }else{
+                        break;
+                    }*/
                     break;
                 }
-            }
-        }
-        do{
-            System.out.print("Ingrese la contraseña de "+nombreUsuario+": ");
-            contrasenia = entradaComandos.nextLine();
-            if(!contrasenia.isEmpty()){
-                System.out.print("Confirme la contraseña: ");
-                contraseniaTemp = entradaComandos.nextLine();
-                if(!contrasenia.equals(contraseniaTemp)){
-                    System.out.println("Las contraseñas deben ser iguales");
+                do{
+                    System.out.print("Ingrese la contraseña de "+nombreUsuario+": ");
+                    contrasenia = entradaComandos.nextLine();
+                    if(!contrasenia.isEmpty()){
+                        System.out.print("Confirme la contraseña: ");
+                        contraseniaTemp = entradaComandos.nextLine();
+                        if(!contrasenia.equals(contraseniaTemp)){
+                            System.out.println("Las contraseñas deben ser iguales");
+                        }
+                    }else{
+                        contraseniaTemp = null;
+                        System.out.println("Ingrese un valor válido.");
+                    }
+                }while(!contrasenia.equals(contraseniaTemp));
+
+                if(root){
+                    usuarioActual = new Usuario(0, nombre, nombreUsuario, contrasenia);
+                }else{
+                    Usuario usuarioNuevo = new Usuario(usuarios.size(), nombre, nombreUsuario, contrasenia);
+                    usuarios.add(usuarioNuevo);
+                    if(escribirUsuario(usuarioNuevo)){
+                        System.out.println("¡Usuario agregado!");
+                    }else{
+                        System.out.println("Error al agregar el usuario");
+                    }
                 }
             }else{
-                contraseniaTemp = null;
-                System.out.println("Ingrese un valor válido.");
+                System.out.println("El nombre de usuario ya existe.");
             }
-        }while(!contrasenia.equals(contraseniaTemp));
-        
-        if(root){
-            usuarioActual = new Usuario(0, nombreUsuario, contrasenia);
         }else{
-            Usuario usuarioNuevo = new Usuario(usuarios.size(), nombreUsuario, contrasenia);
-            usuarios.add(usuarioNuevo);
-            if(escribirUsuario(usuarioNuevo)){
-                System.out.println("¡Usuario agregado!");
+            System.out.println("Especifique un nombre de usuario.");
+        }
+    }
+    
+    private void comandoGroupAdd(Boolean root){
+        String nombreGrupo;
+        while(true){
+            System.out.print("Ingrese el nombre completo: ");
+            nombreGrupo = entradaComandos.nextLine();
+            if(usuarioRepetido(nombreGrupo)){
+                System.out.println("Error, nombre de usuario ya existe");
             }else{
-                System.out.println("Error al agregar el usuario");
+                break;
             }
         }
+        
+        /*Usuario usuarioNuevo = new Usuario(usuarios.size(), nombreUsuario, contrasenia);
+        usuarios.add(usuarioNuevo);
+        if(escribirUsuario(usuarioNuevo)){
+            System.out.println("¡Usuario agregado!");
+        }else{
+            System.out.println("Error al agregar el usuario");
+        }*/
     }
     
     private Boolean usuarioRepetido(String usuario){
@@ -616,7 +649,7 @@ public class SistemaArchivos {
         }
         String bloquesDisco = EstructuraSistemaArchivos.obtenerContenidoInicial(
                 tamanioDisco, cantidadBloques, tamanioBloque, cBloquesLibres,
-                usuarioActual.contrasenia);
+                usuarioActual.nombreCompleto, usuarioActual.contrasenia);
         return bloquesDisco;
     }
     
