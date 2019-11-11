@@ -15,7 +15,7 @@ public class GrupoUsuarios {
     
     int id;
     String nombre;
-    List<Usuario> usuarios;
+    List<Integer> usuariosId;
 
     /**
      * 
@@ -23,9 +23,9 @@ public class GrupoUsuarios {
      * @param nombre
      * @param usuarios 
      */
-    public GrupoUsuarios(int id, String nombre, List<Usuario> usuarios) {
+    public GrupoUsuarios(int id, String nombre, List<Integer> usuariosId) {
         this.id = id;
         this.nombre = nombre;
-        this.usuarios = usuarios;
+        this.usuariosId = usuariosId;
     }
 }
