@@ -148,7 +148,6 @@ public class SistemaArchivos {
         int largoInstrucciones = instrucciones.size();
         for(int i=0;i<largoInstrucciones;i++){          
             String tipoInstrucciones = instrucciones.get(i);      
-            System.out.println(tipoInstrucciones);
             switch (tipoInstrucciones) {
                 
                 case EstructuraSistemaArchivos.INICIO_TAMANIO:
@@ -175,23 +174,7 @@ public class SistemaArchivos {
         imprimirDatos();
     }
     
-    private int obtenerSiguienteBloque(List<String>instrucciones, int id){
-        int largoInstrucciones = instrucciones.size();
-        String tipoInstrucciones = null;
-        for(int i=0;i<largoInstrucciones;i++){
-            tipoInstrucciones = instrucciones.get(i);
-            if(tipoInstrucciones.equals(EstructuraSistemaArchivos.INICIO_BLOQUE)){
-                i +=6;
-                tipoInstrucciones = instrucciones.get(i);
-                if( Integer.parseInt(tipoInstrucciones) == id){
-                    return i-6;
-                }
-            
-            }
-        
-        }
-        return -1;
-    }
+   
     
     private void imprimirDatos(){
         System.out.println("TamanioDisco: "+tamanioDisco);
@@ -250,9 +233,9 @@ public class SistemaArchivos {
                 indice+=2;
                 id = Integer.parseInt(instrucciones.get(indice));
                 indice+=3;
-                contrasenia = instrucciones.get(indice);
-                indice+=3;
                 nombre = instrucciones.get(indice);
+                indice+=3;
+                contrasenia = instrucciones.get(indice);
                 indice+=3;
                 usuarios.add(new Usuario(id,nombre,contrasenia));
             }
@@ -278,6 +261,7 @@ public class SistemaArchivos {
                 // llamado al método
                 break;
             case "passwd":
+                comandoPasswd();
                 // llamado al método
                 break;
             case "su":
@@ -410,6 +394,130 @@ public class SistemaArchivos {
             }
         }
     }
+    private void comandoPasswd(){
+        String nombreUsuario, contrasenia, contraseniaTemp;
+        System.out.print("Ingrese el nombre completo: ");
+        nombreUsuario = entradaComandos.nextLine();
+        boolean existe = false;
+        for(Usuario usuario:usuarios){
+            if(usuario.nombre.equals(nombreUsuario)){
+                existe = true;
+                do{
+                    System.out.print("Ingrese la nueva contraseña de "+nombreUsuario+": ");
+                    contrasenia = entradaComandos.nextLine();
+                    if(!contrasenia.isEmpty()){
+                        System.out.print("Confirme la contraseña: ");
+                        contraseniaTemp = entradaComandos.nextLine();
+                        if(!contrasenia.equals(contraseniaTemp)){
+                            System.out.println("Las contraseñas deben ser iguales");
+                        }
+                    }else{
+                        contraseniaTemp = null;
+                        System.out.println("Ingrese un valor válido.");
+                    }
+                }while(!contrasenia.equals(contraseniaTemp));
+                //Cambiamos la contraseña
+                usuario.contrasenia = contraseniaTemp;
+                cambiarContrasenia(usuario);
+                break;
+                
+                
+                
+            }    
+        }if(!existe){
+             System.out.print("El usuario no existe");      
+        }
+    }
+    
+    private void cambiarContrasenia(Usuario usuario){
+        String contenido = EstructuraSistemaArchivos.generarContenidoUsuario(usuario);
+        Bloque bloqueDestino;
+        RandomAccessFile archivo;
+        Boolean esBloqueNuevo = false;
+        String bloquesLibresActualizados,bloqueSinUsuario,bloqueNuevo;
+        String [] bloqueNuevoArreglo; 
+        int bloqueBuscado = 0;
+        int bloqueLibre;
+        try {
+            archivo = new RandomAccessFile(nombreDisco, "rw");
+            while(true){
+                bloqueDestino = ObtenerBloque(bloqueBuscado);
+                // Genero el bloque nuevo con el usuario donde corresponde
+                bloqueNuevoArreglo = cambiarContraseniaCadena(bloqueDestino, contenido,esBloqueNuevo,usuario);
+                bloqueSinUsuario = bloqueNuevoArreglo[1];
+                bloqueNuevo = bloqueNuevoArreglo[0];
+                if(hayEspacioEnBloque(bloqueDestino, bloqueNuevo)){
+                    escribirBloque(bloqueDestino, bloqueNuevo);
+                    break; // Importante para que no recorra todo el archivo.
+                }else{
+                    if(bloqueDestino.bloqueSiguiente != -1){
+                        bloqueBuscado = bloqueDestino.bloqueSiguiente;
+                    }else{
+                        bloqueLibre = ObtenerBloqueLibre();
+                        if(bloqueLibre != -1){
+                            // Importante llamarla solo después de ObtenerBloqueLibre
+                            // y si es distinto de -1
+                            bloquesLibresActualizados = actualizarBloquesLibres();
+                            if(bloqueDestino.id == 0){
+                                bloqueDestino.contenido = bloquesLibresActualizados;
+                            }
+                            actualizarIdSiguienteBloque(bloqueDestino, bloqueLibre);
+                            bloqueBuscado = bloqueLibre;
+                            esBloqueNuevo = true;
+                        }else{
+                            System.out.println("Error, no hay espacio");
+                            archivo.close();
+                            break;
+                        }
+                    }
+                }
+            }
+            archivo.close();
+            
+        } catch (IOException ex) {
+            
+        }       
+    }
+    
+    /**
+     * Agrega la información de un usuario en el bloque indicado
+     * @param bloque
+     * @param usuario
+     * @return String
+     */
+    private String[] cambiarContraseniaCadena(Bloque bloque, String usuario,
+            Boolean esBloqueNuevo,Usuario user){
+        String[] lineasBloque = bloque.contenido.split("\n");
+        int cantidadLineas = lineasBloque.length;
+        String cadenaFinal = "", linea;
+        String cadenaSinUsuario ="";
+        System.out.println("largo: "+cantidadLineas);
+        for(int i = 0; i < cantidadLineas; i++){
+            linea = lineasBloque[i];
+            if(linea.equals(EstructuraSistemaArchivos.INICIO_USUARIO)){
+                i += 2;
+                linea = lineasBloque[i];
+                if(Integer.parseInt(linea) == user.id ){                       
+                    cadenaFinal += usuario + "\n";                  
+                    i += 8;
+                }else{
+                    i -= 2;
+                    linea = lineasBloque[i];
+                    cadenaFinal += linea + "\n";
+                    cadenaSinUsuario  += linea + "\n";
+                }
+               // cadenaFinal += usuario + "\n";
+            }else if(esBloqueNuevo && linea.equals(EstructuraSistemaArchivos.FINAL_INFORMACION)){
+                cadenaFinal
+                        += EstructuraSistemaArchivos.INICIO_BLOQUE_USUARIOS + "\n"
+                        + usuario + "\n"
+                        + EstructuraSistemaArchivos.FINAL_BLOQUE_USUARIOS + "\n"
+                        + EstructuraSistemaArchivos.INICIO_BLOQUE_G_USUARIOS + "\n"
+                        + EstructuraSistemaArchivos.FINAL_BLOQUE_G_USUARIOS + "\n";
+            }else{cadenaFinal += linea + "\n";cadenaSinUsuario  += linea + "\n";}
+        }System.out.println(cadenaFinal);return new String[]{cadenaFinal,cadenaSinUsuario};
+    }
+    
     
     private Boolean usuarioRepetido(String usuario){
         int cantidadUsuarios = usuarios.size();
@@ -496,8 +604,7 @@ public class SistemaArchivos {
             }else if(leyendoBloque && linea.equals(EstructuraSistemaArchivos.FINAL_BLOQUE)){
                 contenidoB += (linea + "\n");
                 break;
-            }
-            
+            }           
             if(leyendoBloque){
                 contenidoB += (linea + "\n");
             }
