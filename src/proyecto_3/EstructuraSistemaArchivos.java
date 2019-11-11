@@ -32,6 +32,8 @@ public class EstructuraSistemaArchivos {
     public static final String FINAL_USUARIO            = "[/U]";
     public static final String INICIO_G_USUARIO         = "[GU]";
     public static final String FINAL_G_USUARIO          = "[/GU]";
+    public static final String INICIO_N_COMPLETO        = "[NC]";
+    public static final String FINAL_N_COMPLETO         = "[/NC]";
     public static final String INICIO_NOMBRE            = "[N]";
     public static final String FINAL_NOMBRE             = "[/N]";
     public static final String INICIO_CONTRASENIA       = "[Con]";
@@ -48,12 +50,13 @@ public class EstructuraSistemaArchivos {
      * @param cantidadBloques
      * @param tamanioBloque
      * @param cBloquesLibres
+     * @param nombreCompleto
      * @param contrasenia
      * @return String
      */
     public static String obtenerContenidoInicial(int tamanioDisco,
             int cantidadBloques, int tamanioBloque, String cBloquesLibres,
-            String contrasenia){
+            String nombreCompleto, String contrasenia){
         String bloquesDisco
                 = INICIO_BLOQUE                                             +"\n"
                 // Se define el bloque siguiente
@@ -75,6 +78,7 @@ public class EstructuraSistemaArchivos {
                 // Se define el usuario root
                 + INICIO_USUARIO                                            +"\n"
                 + INICIO_ID+"\n0\n"+FINAL_ID                                +"\n"
+                + INICIO_N_COMPLETO+"\n"+nombreCompleto+"\n"+FINAL_N_COMPLETO+"\n"
                 + INICIO_NOMBRE+"\nroot\n"+FINAL_NOMBRE                     +"\n"
                 + INICIO_CONTRASENIA+"\n"+contrasenia+"\n"+FINAL_CONTRASENIA+"\n"
                 + FINAL_USUARIO                                             +"\n"
@@ -123,7 +127,11 @@ public class EstructuraSistemaArchivos {
                 + INICIO_ID             + "\n"
                 + usuario.id            + "\n"
                 + FINAL_ID              + "\n"
-                // Se define en Nombre
+                // Se define el nombre completo
+                + INICIO_N_COMPLETO     + "\n"
+                + usuario.nombreCompleto+ "\n"
+                + FINAL_N_COMPLETO      + "\n"
+                // Se define en Nombre de usuario
                 + INICIO_NOMBRE         + "\n"
                 + usuario.nombre        + "\n"
                 + FINAL_NOMBRE          + "\n"
