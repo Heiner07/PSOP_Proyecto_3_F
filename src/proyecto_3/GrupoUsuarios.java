@@ -20,8 +20,8 @@ public class GrupoUsuarios {
     /**
      * 
      * @param id
-     * @param nombre
-     * @param usuarios 
+     * @param nombre 
+     * @param usuariosId 
      */
     public GrupoUsuarios(int id, String nombre, List<Integer> usuariosId) {
         this.id = id;

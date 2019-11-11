@@ -263,7 +263,7 @@ public class SistemaArchivos {
                 comandoGroupAdd(elementos);
                 break;
             case "passwd":
-                comandoPasswd();
+                comandoPasswd(elementos);
                 // llamado al método
                 break;
             case "su":
@@ -364,7 +364,7 @@ public class SistemaArchivos {
             }else{
                 nombreUsuario = elementos[1];
             }
-            if(!usuarioRepetido(nombreUsuario)){
+            if(!usuarioRepetido(nombreUsuario) || root){
                 while(true){
                     System.out.print("Ingrese el nombre completo: ");
                     nombre = entradaComandos.nextLine();
@@ -443,38 +443,41 @@ public class SistemaArchivos {
         }
         return false;
     }
-    private void comandoPasswd(){
+    private void comandoPasswd(String[] elementos){
         String nombreUsuario, contrasenia, contraseniaTemp;
-        System.out.print("Ingrese el nombre completo: ");
-        nombreUsuario = entradaComandos.nextLine();
-        boolean existe = false;
-        for(Usuario usuario:usuarios){
-            if(usuario.nombre.equals(nombreUsuario)){
-                existe = true;
-                do{
-                    System.out.print("Ingrese la nueva contraseña de "+nombreUsuario+": ");
-                    contrasenia = entradaComandos.nextLine();
-                    if(!contrasenia.isEmpty()){
-                        System.out.print("Confirme la contraseña: ");
-                        contraseniaTemp = entradaComandos.nextLine();
-                        if(!contrasenia.equals(contraseniaTemp)){
-                            System.out.println("Las contraseñas deben ser iguales");
+        if(elementos.length > 1){
+            nombreUsuario = elementos[1];
+            boolean existe = false;
+            for(Usuario usuario:usuarios){
+                if(usuario.nombre.equals(nombreUsuario)){
+                    existe = true;
+                    do{
+                        System.out.print("Ingrese la nueva contraseña de "+nombreUsuario+": ");
+                        contrasenia = entradaComandos.nextLine();
+                        if(!contrasenia.isEmpty()){
+                            System.out.print("Confirme la contraseña: ");
+                            contraseniaTemp = entradaComandos.nextLine();
+                            if(!contrasenia.equals(contraseniaTemp)){
+                                System.out.println("Las contraseñas deben ser iguales");
+                            }
+                        }else{
+                            contraseniaTemp = null;
+                            System.out.println("Ingrese un valor válido.");
                         }
-                    }else{
-                        contraseniaTemp = null;
-                        System.out.println("Ingrese un valor válido.");
-                    }
-                }while(!contrasenia.equals(contraseniaTemp));
-                //Cambiamos la contraseña
-                usuario.contrasenia = contraseniaTemp;
-                cambiarContrasenia(usuario);
-                break;
-                
-                
-                
-            }    
-        }if(!existe){
-             System.out.print("El usuario no existe");      
+                    }while(!contrasenia.equals(contraseniaTemp));
+                    //Cambiamos la contraseña
+                    usuario.contrasenia = contraseniaTemp;
+                    cambiarContrasenia(usuario);
+                    break;
+
+
+
+                }    
+            }if(!existe){
+                System.out.println("El usuario no existe");      
+            }
+        }else{
+            System.out.println("Especifique un nombre de usuario.");
         }
     }
     
