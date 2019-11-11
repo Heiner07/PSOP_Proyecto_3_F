@@ -12,9 +12,11 @@ package proyecto_3;
 public class Bloque {
     
     int id;
+    int bloqueSiguiente;
     int tamanio;
     int tamanioUsado;
     Boolean estaLibre;
+    String contenido;
 
     /**
      * 
@@ -28,5 +30,11 @@ public class Bloque {
         this.tamanio = tamanio;
         this.tamanioUsado = tamanioUsado;
         this.estaLibre = estaLibre;
+    }
+    
+    public Bloque(int id, int bloqueSiguiente, String contenido){
+        this.id = id;
+        this.bloqueSiguiente = bloqueSiguiente;
+        this.contenido = contenido;
     }
 }

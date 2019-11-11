@@ -6,6 +6,7 @@
 package proyecto_3;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.ArrayList;
@@ -376,8 +377,15 @@ public class SistemaArchivos {
         if(root){
             nombreUsuario = "root";
         }else{
-            System.out.print("Ingrese el nombre completo: ");
-            nombreUsuario = entradaComandos.nextLine();
+            while(true){
+                System.out.print("Ingrese el nombre completo: ");
+                nombreUsuario = entradaComandos.nextLine();
+                if(usuarioRepetido(nombreUsuario)){
+                    System.out.println("Error, nombre de usuario ya existe");
+                }else{
+                    break;
+                }
+            }
         }
         do{
             System.out.print("Ingrese la contraseña de "+nombreUsuario+": ");
@@ -407,6 +415,16 @@ public class SistemaArchivos {
         }
     }
     
+    private Boolean usuarioRepetido(String usuario){
+        int cantidadUsuarios = usuarios.size();
+        for (int i = 0; i < cantidadUsuarios; i++) {
+            if(usuarios.get(i).nombre.equals(usuario)){
+                return true;
+            }
+        }
+        return false;
+    }
+    
     /**
      * Escribe un usuario en el archivo (disco).
      * Genera la información del usuario por agregar y determina el bloque en...
@@ -418,39 +436,42 @@ public class SistemaArchivos {
      */
     private Boolean escribirUsuario(Usuario usuario){
         String contenido = EstructuraSistemaArchivos.generarContenidoUsuario(usuario);
+        Bloque bloqueDestino;
         RandomAccessFile archivo;
-        Boolean concatenar = false;
-        String bloque = "", linea, bloqueNuevo;
-        int limiteBloque;
+        Boolean esBloqueNuevo = false;
+        String bloqueNuevo, bloquesLibresActualizados;
+        int bloqueBuscado = 0;
+        int bloqueLibre;
         try {
             archivo = new RandomAccessFile(nombreDisco, "rw");
-            // Ciclo para buscar el bloque correspondiente
-            while((linea = archivo.readLine()) != null){
-                // Si la linea es "[B]", empiezo a leer y generar un bloque
-                if(linea.startsWith(EstructuraSistemaArchivos.INICIO_BLOQUE)){
-                    concatenar = true;
-                }// Si es "[/B], termino de leer un bloque y lo analizo"
-                else if(linea.startsWith(EstructuraSistemaArchivos.FINAL_BLOQUE)){
-                    bloque += linea+"\n";
-                    concatenar = false;
-                    if(hayEspacioEnBloque(bloque, contenido)){
-                        // Limpio el bloque que voy a actualizar
-                        archivo.seek(0); // Cero es el inicio del bloque 0
-                        limiteBloque = tamanioBloque - 1; // Menos uno para agregar un salto de linea
-                        for(int i = 0; i < limiteBloque; i++){
-                            archivo.writeBytes(EstructuraSistemaArchivos.CARACTER_RELLENO);
+            while(true){
+                bloqueDestino = ObtenerBloque(bloqueBuscado);
+                // Genero el bloque nuevo con el usuario donde corresponde
+                bloqueNuevo = agregarUsuarioCadena(bloqueDestino, contenido, esBloqueNuevo);
+                if(hayEspacioEnBloque(bloqueDestino, bloqueNuevo)){
+                    escribirBloque(bloqueDestino, bloqueNuevo);
+                    break; // Importante para que no recorra todo el archivo.
+                }else{
+                    if(bloqueDestino.bloqueSiguiente != -1){
+                        bloqueBuscado = bloqueDestino.bloqueSiguiente;
+                    }else{
+                        bloqueLibre = ObtenerBloqueLibre();
+                        if(bloqueLibre != -1){
+                            // Importante llamarla solo después de ObtenerBloqueLibre
+                            // y si es distinto de -1
+                            bloquesLibresActualizados = actualizarBloquesLibres();
+                            if(bloqueDestino.id == 0){
+                                bloqueDestino.contenido = bloquesLibresActualizados;
+                            }
+                            actualizarIdSiguienteBloque(bloqueDestino, bloqueLibre);
+                            bloqueBuscado = bloqueLibre;
+                            esBloqueNuevo = true;
+                        }else{
+                            System.out.println("Error, no hay espacio");
+                            archivo.close();
+                            return false;
                         }
-                        archivo.writeBytes("\n");
-                        // Genero el bloque nuevo con el usuario donde corresponde
-                        bloqueNuevo = agregarUsuarioCadena(bloque, contenido);
-                        archivo.seek(0); // Cero es el inicio del bloque 0
-                        archivo.writeBytes(bloqueNuevo);
-                        break; // Importante para que no recorra todo el archivo.
                     }
-                    bloque = "";
-                }
-                if(concatenar){
-                    bloque += linea+"\n";
                 }
             }
             archivo.close();
@@ -460,16 +481,59 @@ public class SistemaArchivos {
         }
     }
     
+    private Bloque ObtenerBloque(int numeroBloque) throws FileNotFoundException, IOException{
+        int bloqueS = -1;
+        String contenidoB = "", linea;
+        Boolean leyendoBloque = false, leyendoBloqueS = false;
+        RandomAccessFile archivo = new RandomAccessFile(nombreDisco, "r");
+        archivo.seek(tamanioBloque*numeroBloque);
+        while((linea = archivo.readLine()) != null){
+            if(leyendoBloqueS){
+                leyendoBloqueS = false;
+                bloqueS = Integer.parseInt(linea);
+            }
+            
+            if(linea.equals(EstructuraSistemaArchivos.INICIO_BLOQUE)){
+                leyendoBloque = true;
+            }else if(linea.equals(EstructuraSistemaArchivos.INICIO_BLOQUE_SIGUIENTE)){
+                leyendoBloqueS = true;
+            }else if(leyendoBloque && linea.equals(EstructuraSistemaArchivos.FINAL_BLOQUE)){
+                contenidoB += (linea + "\n");
+                break;
+            }
+            
+            if(leyendoBloque){
+                contenidoB += (linea + "\n");
+            }
+        }
+        archivo.close();
+        return new Bloque(numeroBloque, bloqueS, contenidoB);
+    }
+    
+    private int ObtenerBloqueLibre(){
+        System.out.println("Bloques libres A: "+bloquesLibres.toString());
+        int cantidad = bloquesLibres.size();
+        for(int i = 0; i < cantidad; i++){
+            if(bloquesLibres.get(i)==0){
+                bloquesLibres.set(i, 1);
+                System.out.println("Bloques libres D: "+bloquesLibres.toString());
+                return i;
+            }
+        }return -1;
+    }
+    
     /**
      * Indica si hay espacio para el contenido en el bloque.
-     * De acuerdo con el tamaño de bloque.
+     * De acuerdo con el tamaño de bloque. Se utiliza el bloque para ajustar...
+     * ...los bytes requeridos de acuerdo con el valor de id bloque siguiente
      * @param bloque
-     * @param contenido
+     * @param contenBloqueNuevo
      * @return Boolean
      */
-    private Boolean hayEspacioEnBloque(String bloque, String contenido){
-        String bloqueModificado = bloque + contenido + "\n";
-        return bloqueModificado.getBytes().length <= tamanioBloque;
+    private Boolean hayEspacioEnBloque(Bloque bloque, String contenBloqueNuevo){
+        // Se reservan 80 bytes para almacenar los carácteres del valor máximo de int
+        int tamanioReservaIdS = 80 - String.valueOf(bloque.bloqueSiguiente).getBytes().length;
+        return contenBloqueNuevo.getBytes().length + tamanioReservaIdS < tamanioBloque;
     }
     
     /**
@@ -478,17 +542,71 @@ public class SistemaArchivos {
      * @param usuario
      * @return String
      */
-    private String agregarUsuarioCadena(String bloque, String usuario){
-        String[] lineasBloque = bloque.split("\n");
+    private String agregarUsuarioCadena(Bloque bloque, String usuario,
+            Boolean esBloqueNuevo){
+        String[] lineasBloque = bloque.contenido.split("\n");
         int cantidadLineas = lineasBloque.length;
         String cadenaFinal = "", linea;
         for(int i = 0; i < cantidadLineas; i++){
             linea = lineasBloque[i];
             if(linea.equals(EstructuraSistemaArchivos.FINAL_BLOQUE_USUARIOS)){
                 cadenaFinal += usuario + "\n";
+            }else if(esBloqueNuevo && linea.equals(EstructuraSistemaArchivos.FINAL_INFORMACION)){
+                cadenaFinal
+                        += EstructuraSistemaArchivos.INICIO_BLOQUE_USUARIOS + "\n"
+                        + usuario + "\n"
+                        + EstructuraSistemaArchivos.FINAL_BLOQUE_USUARIOS + "\n"
+                        + EstructuraSistemaArchivos.INICIO_BLOQUE_G_USUARIOS + "\n"
+                        + EstructuraSistemaArchivos.FINAL_BLOQUE_G_USUARIOS + "\n";
             }
             cadenaFinal += linea + "\n";
         }return cadenaFinal;
+    }
+    
+    private String actualizarBloquesLibres() throws IOException{
+        Bloque bloque = ObtenerBloque(0);
+        String[] lineasBloque = bloque.contenido.split("\n");
+        int cantidadLineas = lineasBloque.length;
+        int cantidadBloquesLibres = bloquesLibres.size();
+        String cadenaFinal = "", linea;
+        String cadenabloquesLibres = "" + bloquesLibres.get(0);
+        for(int i = 1; i < cantidadBloquesLibres; i++){
+            cadenabloquesLibres += ","+bloquesLibres.get(i);
+        }
+        for(int i = 0; i < cantidadLineas; i++){
+            linea = lineasBloque[i];
+            if(linea.equals(EstructuraSistemaArchivos.INICIO_BLOQUES_LIBRES)){
+                cadenaFinal += linea + "\n";
+                cadenaFinal += cadenabloquesLibres + "\n";
+                i++;
+            }else{
+                cadenaFinal += linea + ((i+1<cantidadLineas)? "\n" : "");
+            }
+        }escribirBloque(bloque, cadenaFinal);
+        return cadenaFinal;
+    }
+    
+    private void actualizarIdSiguienteBloque(Bloque bloque, int id) throws IOException{
+        String[] lineasBloque = bloque.contenido.split("\n");
+        int cantidadLineas = lineasBloque.length;
+        String cadenaFinal = "", linea;
+        for(int i = 0; i < cantidadLineas; i++){
+            linea = lineasBloque[i];
+            if(linea.equals(EstructuraSistemaArchivos.INICIO_BLOQUE_SIGUIENTE)){
+                cadenaFinal += linea + "\n";
+                cadenaFinal += id + "\n";
+                i++;
+            }else{
+                cadenaFinal += linea + ((i+1<cantidadLineas)? "\n" : "");
+            }
+        }escribirBloque(bloque, cadenaFinal);
+    }
+    
+    private void escribirBloque(Bloque bloque, String contenido) throws FileNotFoundException, IOException{
+        RandomAccessFile archivo = new RandomAccessFile(nombreDisco, "rw");
+        archivo.seek(tamanioBloque * bloque.id);
+        archivo.writeBytes(contenido);
+        archivo.close();
     }
     
     /**
@@ -520,6 +638,7 @@ public class SistemaArchivos {
         List<String> lineas = Arrays.asList(contenido.split("\n"));
         int indiceContenido = 0;
         int tamanioRestanteBloque;
+        int numeroBloque = 1;
         try {
             archivoTemp.delete(); // Se borra el archivo anterior (si existe)
             archivo = new RandomAccessFile(nombreDisco, "rw"); // Se crea el nuevo
@@ -536,10 +655,9 @@ public class SistemaArchivos {
                         lineaPorAgregar += linea + "\n";
                         // Se escribe el bloque
                         archivo.writeBytes(lineaPorAgregar);
-                        // Se calcula el tamanio restante en el bloque.
-                        tamanioRestanteBloque = tamanioBloque - lineaPorAgregar.getBytes().length;
                         // Se mueve el puntero del archivo hasta el inicio donde debe ir el siguiente bloque
-                        archivo.seek(archivo.getFilePointer() + tamanioRestanteBloque - 1);
+                        archivo.seek(tamanioBloque * numeroBloque);
+                        numeroBloque++;
                         break;
                     default: // Se va formando cada bloque
                         lineaPorAgregar += linea;
