@@ -186,10 +186,7 @@ public class SistemaArchivos {
         }
         for(GrupoUsuarios gu:gruposUsuarios){
             System.out.println("grupo: "+gu.id+ " nombre: "+gu.nombre);
-            for(Usuario us:gu.usuarios){
-                System.out.println("id: "+us.id);
-        
-            }
+           
         
         }
     
@@ -199,6 +196,7 @@ public class SistemaArchivos {
         String tipoInstruccion = instrucciones.get(indice);
         int id = 0;
         String nombre = null;
+        
         while(!tipoInstruccion.equals(EstructuraSistemaArchivos.FINAL_BLOQUE_G_USUARIOS)){
             tipoInstruccion = instrucciones.get(indice);
             if(tipoInstruccion.equals(EstructuraSistemaArchivos.INICIO_G_USUARIO)){
@@ -207,17 +205,17 @@ public class SistemaArchivos {
                 indice+=3;
                 nombre = instrucciones.get(indice);
                 indice++;             
-                List<Usuario> usuariosGrupos = new ArrayList<>();
+                List<Integer> usuariosId = new ArrayList<Integer>(); 
                 while(!instrucciones.get(indice).equals(EstructuraSistemaArchivos.FINAL_G_USUARIO)){
                     tipoInstruccion = instrucciones.get(indice);
                     if(tipoInstruccion.equals(EstructuraSistemaArchivos.INICIO_ID)){
                         indice++;
-                        usuariosGrupos.add(new Usuario(Integer.parseInt(instrucciones.get(indice)),null,null,null));                   
+                        usuariosId.add(Integer.parseInt(instrucciones.get(indice)));                   
                     }indice++;
                 
                 }
                 indice++;
-                gruposUsuarios.add(new GrupoUsuarios(id,nombre,usuariosGrupos));
+                gruposUsuarios.add(new GrupoUsuarios(id,nombre,usuariosId));
             }       
         }
         return indice;

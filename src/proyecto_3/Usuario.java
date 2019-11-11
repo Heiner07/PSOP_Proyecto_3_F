@@ -29,4 +29,5 @@ public class Usuario {
         this.nombre = nombre;
         this.contrasenia = contasenia;
     }
+    
 }
