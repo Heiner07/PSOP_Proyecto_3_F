@@ -226,18 +226,20 @@ public class SistemaArchivos {
     private int cargarUsuarios(List<String> instrucciones, int indice){
         String tipoInstruccion = instrucciones.get(indice);
         int id = 0;
-        String nombre = null,contrasenia = null;
+        String nombre = null,contrasenia = null,nombreCompleto=null;
         while(!tipoInstruccion.equals(EstructuraSistemaArchivos.FINAL_BLOQUE_USUARIOS)){
             tipoInstruccion = instrucciones.get(indice);
             if(tipoInstruccion.equals(EstructuraSistemaArchivos.INICIO_USUARIO)){
                 indice+=2;
                 id = Integer.parseInt(instrucciones.get(indice));
                 indice+=3;
+                nombreCompleto = instrucciones.get(indice);
+                indice+=3;
                 nombre = instrucciones.get(indice);
                 indice+=3;
                 contrasenia = instrucciones.get(indice);
                 indice+=3;
-                usuarios.add(new Usuario(id,"TEMP_NOMBRECOMPLETO",nombre,contrasenia));
+                usuarios.add(new Usuario(id,nombreCompleto,nombre,contrasenia));
             }
         }return indice;
     }
