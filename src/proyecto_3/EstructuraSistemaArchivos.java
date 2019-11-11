@@ -131,7 +131,7 @@ public class EstructuraSistemaArchivos {
                 + INICIO_N_COMPLETO     + "\n"
                 + usuario.nombreCompleto+ "\n"
                 + FINAL_N_COMPLETO      + "\n"
-                // Se define en Nombre de usuario
+                // Se define el nombre de usuario
                 + INICIO_NOMBRE         + "\n"
                 + usuario.nombre        + "\n"
                 + FINAL_NOMBRE          + "\n"
@@ -141,6 +141,28 @@ public class EstructuraSistemaArchivos {
                 + FINAL_CONTRASENIA     + "\n"
                 // Se cierra el Usuario
                 + FINAL_USUARIO;
+        return cUsuario;
+    }
+    
+    /**
+     * Genera el string, del grupo usuario nuevo, utilizado para agregar un
+     * grupo usuario al archivo (Disco).
+     * @param grupoUsuario
+     * @return String
+     */
+    public static String generarContenidoGrupoUsuario(GrupoUsuarios grupoUsuario){
+        String cUsuario
+                = INICIO_G_USUARIO      + "\n"
+                // Se define el Id
+                + INICIO_ID             + "\n"
+                + grupoUsuario.id       + "\n"
+                + FINAL_ID              + "\n"
+                // Se define el nombre de grupo
+                + INICIO_NOMBRE         + "\n"
+                + grupoUsuario.nombre   + "\n"
+                + FINAL_NOMBRE          + "\n"
+                // Se cierra el Usuario
+                + FINAL_G_USUARIO;
         return cUsuario;
     }
 }

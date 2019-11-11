@@ -277,7 +277,7 @@ public class SistemaArchivos {
                 comandoUserAdd(elementos,false);
                 break;
             case "groupadd":
-                // llamado al método
+                comandoGroupAdd(elementos);
                 break;
             case "passwd":
                 // llamado al método
@@ -368,6 +368,8 @@ public class SistemaArchivos {
      * Se encarga de ejecutar el comando "useradd". Si la variable es root,...
      * ...es el usuario root, por lo que solo pide la contraseña, sino, esta...
      * ...agregando un usuario normal.
+     * * Los elementos son la linea introduccida en la consola.
+     * @param elementos
      * @param root 
      */
     private void comandoUserAdd(String[] elementos, Boolean root){
@@ -423,25 +425,39 @@ public class SistemaArchivos {
         }
     }
     
-    private void comandoGroupAdd(Boolean root){
-        String nombreGrupo;
-        while(true){
-            System.out.print("Ingrese el nombre completo: ");
-            nombreGrupo = entradaComandos.nextLine();
-            if(usuarioRepetido(nombreGrupo)){
-                System.out.println("Error, nombre de usuario ya existe");
+    /**
+     * Se encarga de ejecutar el comando "groupadd". Agrega un grupo al sistema.
+     * Los elementos son la linea introduccida en la consola.
+     * @param elementos
+     */
+    private void comandoGroupAdd(String[] elementos){
+        if(elementos.length > 1){
+            String nombreGrupo;
+            nombreGrupo = elementos[1];
+            if(!grupoRepetido(nombreGrupo)){
+                GrupoUsuarios grupoNuevo = new GrupoUsuarios(gruposUsuarios.size(),nombreGrupo, null);
+                gruposUsuarios.add(grupoNuevo);
+                if(escribirGrupoUsuario(grupoNuevo)){
+                    System.out.println("¡Grupo agregado!");
+                }else{
+                    System.out.println("Error al agregar el grupo");
+                }
             }else{
-                break;
+                System.out.println("El nombre de grupo ya existe.");
+            }
+        }else{
+            System.out.println("Especifique un nombre de grupo.");
+        }
+    }
+    
+    private Boolean grupoRepetido(String grupo){
+        int cantidadGrupos = gruposUsuarios.size();
+        for (int i = 0; i < cantidadGrupos; i++) {
+            if(gruposUsuarios.get(i).nombre.equals(grupo)){
+                return true;
             }
         }
-        
-        /*Usuario usuarioNuevo = new Usuario(usuarios.size(), nombreUsuario, contrasenia);
-        usuarios.add(usuarioNuevo);
-        if(escribirUsuario(usuarioNuevo)){
-            System.out.println("¡Usuario agregado!");
-        }else{
-            System.out.println("Error al agregar el usuario");
-        }*/
+        return false;
     }
     
     private Boolean usuarioRepetido(String usuario){
@@ -452,6 +468,53 @@ public class SistemaArchivos {
             }
         }
         return false;
+    }
+    
+    private Boolean escribirGrupoUsuario(GrupoUsuarios gruposUsuarios){
+        String contenido = EstructuraSistemaArchivos.generarContenidoGrupoUsuario(gruposUsuarios);
+        Bloque bloqueDestino;
+        RandomAccessFile archivo;
+        Boolean esBloqueNuevo = false;
+        String bloqueNuevo, bloquesLibresActualizados;
+        int bloqueBuscado = 0;
+        int bloqueLibre;
+        try {
+            archivo = new RandomAccessFile(nombreDisco, "rw");
+            while(true){
+                bloqueDestino = ObtenerBloque(bloqueBuscado);
+                // Genero el bloque nuevo con el usuario donde corresponde
+                bloqueNuevo = agregarGrupoUsuarioCadena(bloqueDestino, contenido, esBloqueNuevo);
+                if(hayEspacioEnBloque(bloqueDestino, bloqueNuevo)){
+                    escribirBloque(bloqueDestino, bloqueNuevo);
+                    break; // Importante para que no recorra todo el archivo.
+                }else{
+                    if(bloqueDestino.bloqueSiguiente != -1){
+                        bloqueBuscado = bloqueDestino.bloqueSiguiente;
+                    }else{
+                        bloqueLibre = ObtenerBloqueLibre();
+                        if(bloqueLibre != -1){
+                            // Importante llamarla solo después de ObtenerBloqueLibre
+                            // y si es distinto de -1
+                            bloquesLibresActualizados = actualizarBloquesLibres();
+                            if(bloqueDestino.id == 0){
+                                bloqueDestino.contenido = bloquesLibresActualizados;
+                            }
+                            actualizarIdSiguienteBloque(bloqueDestino, bloqueLibre);
+                            bloqueBuscado = bloqueLibre;
+                            esBloqueNuevo = true;
+                        }else{
+                            System.out.println("Error, no hay espacio");
+                            archivo.close();
+                            return false;
+                        }
+                    }
+                }
+            }
+            archivo.close();
+            return true;
+        } catch (IOException ex) {
+            return false;
+        }
     }
     
     /**
@@ -561,6 +624,33 @@ public class SistemaArchivos {
         // Se reservan 80 bytes para almacenar los carácteres del valor máximo de int
         int tamanioReservaIdS = 80 - String.valueOf(bloque.bloqueSiguiente).getBytes().length;
         return contenBloqueNuevo.getBytes().length + tamanioReservaIdS < tamanioBloque;
+    }
+    
+    /**
+     * Agrega la información de un grupo usuarios en el bloque indicado
+     * @param bloque
+     * @param grupoUsuario
+     * @return String
+     */
+    private String agregarGrupoUsuarioCadena(Bloque bloque, String grupoUsuario,
+            Boolean esBloqueNuevo){
+        String[] lineasBloque = bloque.contenido.split("\n");
+        int cantidadLineas = lineasBloque.length;
+        String cadenaFinal = "", linea;
+        for(int i = 0; i < cantidadLineas; i++){
+            linea = lineasBloque[i];
+            if(linea.equals(EstructuraSistemaArchivos.FINAL_BLOQUE_G_USUARIOS)){
+                cadenaFinal += grupoUsuario + "\n";
+            }else if(esBloqueNuevo && linea.equals(EstructuraSistemaArchivos.FINAL_INFORMACION)){
+                cadenaFinal
+                        += EstructuraSistemaArchivos.INICIO_BLOQUE_USUARIOS + "\n"
+                        + EstructuraSistemaArchivos.FINAL_BLOQUE_USUARIOS + "\n"
+                        + EstructuraSistemaArchivos.INICIO_BLOQUE_G_USUARIOS + "\n"
+                        + grupoUsuario + "\n"
+                        + EstructuraSistemaArchivos.FINAL_BLOQUE_G_USUARIOS + "\n";
+            }
+            cadenaFinal += linea + "\n";
+        }return cadenaFinal;
     }
     
     /**
