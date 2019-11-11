@@ -128,6 +128,7 @@ public class SistemaArchivos {
                 }
             }else if(st.equals(EstructuraSistemaArchivos.INICIO_NUMERO_BLOQUES)){
                 st = archivo.readLine();
+                cantidadBloques = Integer.parseInt(st);           
                 instrucciones.add(st);
                 st = archivo.readLine();
                 tamanioBloque = Integer.parseInt(st);           
@@ -146,19 +147,14 @@ public class SistemaArchivos {
     private void cargarDatos(List<String> instrucciones){
         int largoInstrucciones = instrucciones.size();
         for(int i=0;i<largoInstrucciones;i++){          
-            String tipoInstrucciones = instrucciones.get(i);          
+            String tipoInstrucciones = instrucciones.get(i);      
+            System.out.println(tipoInstrucciones);
             switch (tipoInstrucciones) {
                 
                 case EstructuraSistemaArchivos.INICIO_TAMANIO:
                     i++;
                     tamanioDisco = Integer.parseInt(instrucciones.get(i));
-                    break;
-                case EstructuraSistemaArchivos.INICIO_NUMERO_BLOQUES:
-                    i++;
-                    cantidadBloques = Integer.parseInt(instrucciones.get(i));
-                    i++;
-                    tamanioBloque = Integer.parseInt(instrucciones.get(i));
-                    break;
+                    break;              
                 case EstructuraSistemaArchivos.INICIO_BLOQUES_LIBRES:
                     i++;
                     cargarBloquesLibres(instrucciones.get(i));
