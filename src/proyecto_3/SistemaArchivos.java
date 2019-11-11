@@ -482,7 +482,7 @@ public class SistemaArchivos {
         String contenidoB = "", linea;
         Boolean leyendoBloque = false, leyendoBloqueS = false;
         RandomAccessFile archivo = new RandomAccessFile(nombreDisco, "r");
-        archivo.seek(tamanioBloque*numeroBloque);
+        archivo.seek(tamanioBloque * numeroBloque);
         while((linea = archivo.readLine()) != null){
             if(leyendoBloqueS){
                 leyendoBloqueS = false;
@@ -507,12 +507,10 @@ public class SistemaArchivos {
     }
     
     private int ObtenerBloqueLibre(){
-        System.out.println("Bloques libres A: "+bloquesLibres.toString());
         int cantidad = bloquesLibres.size();
         for(int i = 0; i < cantidad; i++){
             if(bloquesLibres.get(i)==0){
                 bloquesLibres.set(i, 1);
-                System.out.println("Bloques libres D: "+bloquesLibres.toString());
                 return i;
             }
         }return -1;
@@ -633,7 +631,6 @@ public class SistemaArchivos {
         String lineaPorAgregar = "";
         List<String> lineas = Arrays.asList(contenido.split("\n"));
         int indiceContenido = 0;
-        int tamanioRestanteBloque;
         int numeroBloque = 1;
         try {
             archivoTemp.delete(); // Se borra el archivo anterior (si existe)
