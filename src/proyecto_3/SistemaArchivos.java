@@ -66,7 +66,7 @@ public class SistemaArchivos {
             if (!sistemaCargado) {
                 cargarSistemaArchivos();
             } else {
-                System.out.print("Usuario: ");
+                System.out.print(usuarioActual.nombre+"@miFS: ");
                 lineaActual = entradaComandos.nextLine();
                 historialComandos += lineaActual + "\n";
                 if (lineaActual.equals("exit")) {
@@ -223,7 +223,7 @@ public class SistemaArchivos {
     
     private int cargarUsuarios(List<String> instrucciones, int indice){
         String tipoInstruccion = instrucciones.get(indice);
-        int id = 0;
+        int id;
         String nombre = null,contrasenia = null,nombreCompleto=null;
         while(!tipoInstruccion.equals(EstructuraSistemaArchivos.FINAL_BLOQUE_USUARIOS)){
             tipoInstruccion = instrucciones.get(indice);
@@ -239,7 +239,8 @@ public class SistemaArchivos {
                 indice+=3;
                 usuarios.add(new Usuario(id,nombreCompleto,nombre,contrasenia));
             }
-        }return indice;
+        }usuarioActual = usuarios.get(0);// Se establece el usuario root como el actual
+        return indice;
     }
     
     private void cargarBloquesLibres(String instruccionBloques){
@@ -267,10 +268,10 @@ public class SistemaArchivos {
                 // llamado al método
                 break;
             case "su":
-                // llamado al método
+                comandoSU(elementos);
                 break;
             case "whoami":
-                // llamado al método
+                comandoWhoAmI();
                 break;
             case "pwd":
                 // llamado al método
@@ -443,6 +444,7 @@ public class SistemaArchivos {
         }
         return false;
     }
+    
     private void comandoPasswd(String[] elementos){
         String nombreUsuario, contrasenia, contraseniaTemp;
         if(elementos.length > 1){
@@ -529,6 +531,45 @@ public class SistemaArchivos {
         } catch (IOException ex) {
             
         }       
+    }
+    
+    private void comandoSU(String[] elementos){
+        Usuario usuarioTem;
+        String contrasenia;
+        if(elementos.length > 1){
+            usuarioTem = obtenerUsuario(elementos[1]);
+            if(usuarioTem != null){
+                usuarioActual = usuarioTem;
+            }else{
+                System.out.println("El usuario no existe");
+            }
+        }else{
+            usuarioTem = usuarios.get(0);
+        }
+        if(usuarioTem != null){
+            System.out.print("Ingrese la contraseña: ");
+            contrasenia = entradaComandos.nextLine();
+            if(contrasenia.equals(usuarioTem.contrasenia)){
+                usuarioActual = usuarioTem;
+            }else{
+                System.out.println("La contraseña no es correcta.");
+            }
+        }
+    }
+    
+    private void comandoWhoAmI(){
+        System.out.println("username: "+usuarioActual.nombre);
+        System.out.println("full name: "+usuarioActual.nombreCompleto);
+    }
+    
+    private Usuario obtenerUsuario(String usuario){
+        int cantidadUsuarios = usuarios.size();
+        for (int i = 0; i < cantidadUsuarios; i++) {
+            if(usuarios.get(i).nombre.equals(usuario)){
+                return usuarios.get(i);
+            }
+        }
+        return null;
     }
     
     /**
