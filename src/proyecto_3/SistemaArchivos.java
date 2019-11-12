@@ -72,7 +72,7 @@ public class SistemaArchivos {
             if (!sistemaCargado) {
                 cargarSistemaArchivos();
             } else {
-                System.out.print("Usuario: ");
+                System.out.print(usuarioActual.nombre+"@miFS: ");
                 lineaActual = entradaComandos.nextLine();
                 historialComandos += lineaActual + "\n";
                 if (lineaActual.equals("exit")) {
@@ -144,7 +144,7 @@ public class SistemaArchivos {
         }
         
         cargarDatos(instrucciones);
-
+        cargarCarpeta(1); // El bloque 1 contiene la carpeta root por cargar.
     }
     
     /**
@@ -231,7 +231,7 @@ public class SistemaArchivos {
     
     private int cargarUsuarios(List<String> instrucciones, int indice){
         String tipoInstruccion = instrucciones.get(indice);
-        int id = 0;
+        int id;
         String nombre = null,contrasenia = null,nombreCompleto=null;
         while(!tipoInstruccion.equals(EstructuraSistemaArchivos.FINAL_BLOQUE_USUARIOS)){
             tipoInstruccion = instrucciones.get(indice);
@@ -247,7 +247,8 @@ public class SistemaArchivos {
                 indice+=3;
                 usuarios.add(new Usuario(id,nombreCompleto,nombre,contrasenia));
             }
-        }return indice;
+        }usuarioActual = usuarios.get(0);// Se establece el usuario root como el actual
+        return indice;
     }
     
     private void cargarBloquesLibres(String instruccionBloques){
@@ -268,20 +269,20 @@ public class SistemaArchivos {
                 comandoUserAdd(elementos,false);
                 break;
             case "groupadd":
-                // llamado al método
+                comandoGroupAdd(elementos);
                 break;
             case "passwd":
                 comandoPasswd(elementos);
                 // llamado al método
                 break;
             case "su":
-                // llamado al método
+                comandoSU(elementos);
                 break;
             case "whoami":
-                // llamado al método
+                comandoWhoAmI();
                 break;
             case "pwd":
-                // llamado al método
+                comandoPwd();
                 break;
             case "mkdir":
                 // llamado al método
@@ -360,6 +361,8 @@ public class SistemaArchivos {
      * Se encarga de ejecutar el comando "useradd". Si la variable es root,...
      * ...es el usuario root, por lo que solo pide la contraseña, sino, esta...
      * ...agregando un usuario normal.
+     * * Los elementos son la linea introduccida en la consola.
+     * @param elementos
      * @param root 
      */
     private void comandoUserAdd(String[] elementos, Boolean root){
@@ -370,7 +373,7 @@ public class SistemaArchivos {
             }else{
                 nombreUsuario = elementos[1];
             }
-            if(!usuarioRepetido(nombreUsuario)){
+            if(!usuarioRepetido(nombreUsuario) || root){
                 while(true){
                     System.out.print("Ingrese el nombre completo: ");
                     nombre = entradaComandos.nextLine();
@@ -415,18 +418,41 @@ public class SistemaArchivos {
         }
     }
     
-    private void comandoGroupAdd(Boolean root){
-        String nombreGrupo;
-        while(true){
-            System.out.print("Ingrese el nombre completo: ");
-            nombreGrupo = entradaComandos.nextLine();
-            if(usuarioRepetido(nombreGrupo)){
-                System.out.println("Error, nombre de usuario ya existe");
+    /**
+     * Se encarga de ejecutar el comando "groupadd". Agrega un grupo al sistema.
+     * Los elementos son la linea introduccida en la consola.
+     * @param elementos
+     */
+    private void comandoGroupAdd(String[] elementos){
+        if(elementos.length > 1){
+            String nombreGrupo;
+            nombreGrupo = elementos[1];
+            if(!grupoRepetido(nombreGrupo)){
+                GrupoUsuarios grupoNuevo = new GrupoUsuarios(gruposUsuarios.size(),nombreGrupo, null);
+                gruposUsuarios.add(grupoNuevo);
+                if(escribirGrupoUsuario(grupoNuevo)){
+                    System.out.println("¡Grupo agregado!");
+                }else{
+                    System.out.println("Error al agregar el grupo");
+                }
             }else{
-                break;
+                System.out.println("El nombre de grupo ya existe.");
             }
+        }else{
+            System.out.println("Especifique un nombre de grupo.");
         }
     }
+    
+    private Boolean grupoRepetido(String grupo){
+        int cantidadGrupos = gruposUsuarios.size();
+        for (int i = 0; i < cantidadGrupos; i++) {
+            if(gruposUsuarios.get(i).nombre.equals(grupo)){
+                return true;
+            }
+        }
+        return false;
+    }
+    
     private void comandoPasswd(String[] elementos){
         String nombreUsuario, contrasenia, contraseniaTemp;
         if(elementos.length > 1){
@@ -463,7 +489,7 @@ public class SistemaArchivos {
     }
     
     private void cambiarContrasenia(Usuario usuario,String contrasenia){
-        String contenido = EstructuraSistemaArchivos.generarContenidoUsuario(usuario);
+        String contenido = EstructuraSistemaArchivos.generarContenidoUsuario(new Usuario(usuario.id,usuario.nombreCompleto,usuario.nombre,contrasenia));
         Bloque bloqueDestino;
         RandomAccessFile archivo;
         Boolean esBloqueNuevo = false;
@@ -514,7 +540,50 @@ public class SistemaArchivos {
             
         }       
     }
-   
+    
+    private void comandoSU(String[] elementos){
+        Usuario usuarioTem;
+        String contrasenia;
+        if(elementos.length > 1){
+            usuarioTem = obtenerUsuario(elementos[1]);
+            if(usuarioTem != null){
+                usuarioActual = usuarioTem;
+            }else{
+                System.out.println("El usuario no existe");
+            }
+        }else{
+            usuarioTem = usuarios.get(0);
+        }
+        if(usuarioTem != null){
+            System.out.print("Ingrese la contraseña: ");
+            contrasenia = entradaComandos.nextLine();
+            if(contrasenia.equals(usuarioTem.contrasenia)){
+                usuarioActual = usuarioTem;
+            }else{
+                System.out.println("La contraseña no es correcta.");
+            }
+        }
+    }
+    
+    private void comandoWhoAmI(){
+        System.out.println("username: "+usuarioActual.nombre);
+        System.out.println("full name: "+usuarioActual.nombreCompleto);
+    }
+    
+    private void comandoPwd(){
+        System.out.println(rutaActual.ubicacion);
+    }
+    
+    private Usuario obtenerUsuario(String usuario){
+        int cantidadUsuarios = usuarios.size();
+        for (int i = 0; i < cantidadUsuarios; i++) {
+            if(usuarios.get(i).nombre.equals(usuario)){
+                return usuarios.get(i);
+            }
+        }
+        return null;
+    }
+    
     /**
      * Agrega la información de un usuario en el bloque indicado
      * @param bloque
@@ -533,7 +602,7 @@ public class SistemaArchivos {
             if(linea.equals(EstructuraSistemaArchivos.INICIO_USUARIO) && enUsuarios){
                 i += 2;
                 linea = lineasBloque[i];
-                if(Integer.parseInt(linea) == user.id ){    
+                if(Integer.parseInt(linea) == user.id ){                       
                     bloqueUbicadoContrasenia = bloque.id;
                     cadenaFinal += usuario + "\n";      
                     enUsuarios= false;
@@ -570,6 +639,53 @@ public class SistemaArchivos {
             }
         }
         return false;
+    }
+    
+    private Boolean escribirGrupoUsuario(GrupoUsuarios gruposUsuarios){
+        String contenido = EstructuraSistemaArchivos.generarContenidoGrupoUsuario(gruposUsuarios);
+        Bloque bloqueDestino;
+        RandomAccessFile archivo;
+        Boolean esBloqueNuevo = false;
+        String bloqueNuevo, bloquesLibresActualizados;
+        int bloqueBuscado = 0;
+        int bloqueLibre;
+        try {
+            archivo = new RandomAccessFile(nombreDisco, "rw");
+            while(true){
+                bloqueDestino = ObtenerBloque(bloqueBuscado);
+                // Genero el bloque nuevo con el usuario donde corresponde
+                bloqueNuevo = agregarGrupoUsuarioCadena(bloqueDestino, contenido, esBloqueNuevo);
+                if(hayEspacioEnBloque(bloqueDestino, bloqueNuevo)){
+                    escribirBloque(bloqueDestino.id, bloqueNuevo);
+                    break; // Importante para que no recorra todo el archivo.
+                }else{
+                    if(bloqueDestino.bloqueSiguiente != -1){
+                        bloqueBuscado = bloqueDestino.bloqueSiguiente;
+                    }else{
+                        bloqueLibre = ObtenerBloqueLibre();
+                        if(bloqueLibre != -1){
+                            // Importante llamarla solo después de ObtenerBloqueLibre
+                            // y si es distinto de -1
+                            bloquesLibresActualizados = actualizarBloquesLibres();
+                            if(bloqueDestino.id == 0){
+                                bloqueDestino.contenido = bloquesLibresActualizados;
+                            }
+                            actualizarIdSiguienteBloque(bloqueDestino, bloqueLibre);
+                            bloqueBuscado = bloqueLibre;
+                            esBloqueNuevo = true;
+                        }else{
+                            System.out.println("Error, no hay espacio");
+                            archivo.close();
+                            return false;
+                        }
+                    }
+                }
+            }
+            archivo.close();
+            return true;
+        } catch (IOException ex) {
+            return false;
+        }
     }
     
     /**
@@ -683,6 +799,33 @@ public class SistemaArchivos {
     }
     
     /**
+     * Agrega la información de un grupo usuarios en el bloque indicado
+     * @param bloque
+     * @param grupoUsuario
+     * @return String
+     */
+    private String agregarGrupoUsuarioCadena(Bloque bloque, String grupoUsuario,
+            Boolean esBloqueNuevo){
+        String[] lineasBloque = bloque.contenido.split("\n");
+        int cantidadLineas = lineasBloque.length;
+        String cadenaFinal = "", linea;
+        for(int i = 0; i < cantidadLineas; i++){
+            linea = lineasBloque[i];
+            if(linea.equals(EstructuraSistemaArchivos.FINAL_BLOQUE_G_USUARIOS)){
+                cadenaFinal += grupoUsuario + "\n";
+            }else if(esBloqueNuevo && linea.equals(EstructuraSistemaArchivos.FINAL_INFORMACION)){
+                cadenaFinal
+                        += EstructuraSistemaArchivos.INICIO_BLOQUE_USUARIOS + "\n"
+                        + EstructuraSistemaArchivos.FINAL_BLOQUE_USUARIOS + "\n"
+                        + EstructuraSistemaArchivos.INICIO_BLOQUE_G_USUARIOS + "\n"
+                        + grupoUsuario + "\n"
+                        + EstructuraSistemaArchivos.FINAL_BLOQUE_G_USUARIOS + "\n";
+            }
+            cadenaFinal += linea + "\n";
+        }return cadenaFinal;
+    }
+    
+    /**
      * Agrega la información de un usuario en el bloque indicado
      * @param bloque
      * @param usuario
@@ -755,6 +898,39 @@ public class SistemaArchivos {
         archivo.close();
     }
     
+    private void cargarCarpeta(int numeroBloque) throws IOException{
+        Archivo carpeta;
+        Bloque bloqueCarpeta;
+        Boolean cargarCarpeta = true;
+        String[] lineasBloque;
+        int bloqueBuscado = numeroBloque;
+        int cantidadLineas;
+        int idUsuario, idGrupoUsuario;
+        String linea, nombre, ubicacion, permisos, fechaC, fechaM;
+        // Se obtiene la información de la carpeta.
+        bloqueCarpeta = ObtenerBloque(bloqueBuscado);
+        lineasBloque = bloqueCarpeta.contenido.split("\n");
+        cantidadLineas = lineasBloque.length;
+        int i = 9; // A partir de esta línea, empieza la info de la carpeta.
+        nombre = lineasBloque[i];
+        i++;i++;i++;
+        ubicacion = lineasBloque[i];
+        i++;i++;i++;
+        permisos = lineasBloque[i];
+        i++;i++;i++;
+        fechaC = lineasBloque[i];
+        i++;i++;i++;
+        fechaM = lineasBloque[i];
+        i++;i++;i++;
+        idUsuario = Integer.parseInt(lineasBloque[i]);
+        i++;i++;i++;
+        idGrupoUsuario = Integer.parseInt(lineasBloque[i]);
+        carpeta = new Archivo(0, 0, nombre, ubicacion, permisos, fechaC, fechaM,
+                usuarios.get(idUsuario), gruposUsuarios.get(idGrupoUsuario), 1,
+                true, null);
+        rutaActual = carpeta;
+    }
+    
     /**
      * Genera el contenido base del sistema de archivos.
      * @return String
@@ -762,8 +938,8 @@ public class SistemaArchivos {
     private String generarContenido(){
         cantidadBloques = (tamanioDisco * 1024) / 512;
         tamanioBloque = 512 * 1024;
-        String cBloquesLibres = "1";
-        for(int i = 1; i < cantidadBloques; i++){
+        String cBloquesLibres = "1,1";
+        for(int i = 2; i < cantidadBloques; i++){
             cBloquesLibres += ",0";
         }
         String bloquesDisco = EstructuraSistemaArchivos.obtenerContenidoInicial(
