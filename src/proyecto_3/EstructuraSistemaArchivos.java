@@ -5,6 +5,8 @@
  */
 package proyecto_3;
 
+import java.util.Calendar;
+
 /**
  *
  * @author Heiner
@@ -38,6 +40,14 @@ public class EstructuraSistemaArchivos {
     public static final String FINAL_NOMBRE             = "[/N]";
     public static final String INICIO_CONTRASENIA       = "[Con]";
     public static final String FINAL_CONTRASENIA        = "[/Con]";
+    public static final String INICIO_UBICACION         = "[UB]";
+    public static final String FINAL_UBICACION          = "[/UB]";
+    public static final String INICIO_PERMISOS          = "[PE]";
+    public static final String FINAL_PERMISOS           = "[/PE]";
+    public static final String INICIO_FECHA_C           = "[FC]";
+    public static final String FINAL_FECHA_C            = "[/FC]";
+    public static final String INICIO_FECHA_M           = "[FM]";
+    public static final String FINAL_FECHA_M            = "[/FM]";
     public static final String INICIO_CARPETA           = "[C]";
     public static final String FINAL_CARPETA            = "[/C]";
     public static final String INICIO_ARCHIVO           = "[A]";
@@ -57,6 +67,10 @@ public class EstructuraSistemaArchivos {
     public static String obtenerContenidoInicial(int tamanioDisco,
             int cantidadBloques, int tamanioBloque, String cBloquesLibres,
             String nombreCompleto, String contrasenia){
+        Calendar fecha = Calendar.getInstance();
+        String fechaActual = fecha.get(Calendar.DATE)
+                + "/" + fecha.get(Calendar.MONTH)
+                + "/" + fecha.get(Calendar.YEAR);
         String bloquesDisco
                 = INICIO_BLOQUE                                             +"\n"
                 // Se define el bloque siguiente
@@ -101,8 +115,23 @@ public class EstructuraSistemaArchivos {
                 + FINAL_INFORMACION                                         +"\n"
                 // Se cierra el bloque
                 + FINAL_BLOQUE                                              +"\n";
+        // Se crea el bloque con la carpeta root
+        bloquesDisco
+                += INICIO_BLOQUE                    + "\n"
+                + INICIO_BLOQUE_SIGUIENTE+"\n-1\n"+FINAL_BLOQUE_SIGUIENTE+"\n"
+                + INICIO_INFORMACION                + "\n"
+                + INICIO_ID+"\n"+1+"\n"+FINAL_ID    + "\n"
+                + INICIO_NOMBRE+"\nroot\n"+FINAL_NOMBRE+"\n"
+                + INICIO_UBICACION+"\nroot/\n"+FINAL_UBICACION+"\n"
+                + INICIO_PERMISOS+"\nPERMISOS\n"+FINAL_PERMISOS+"\n"
+                + INICIO_FECHA_C+"\n"+fechaActual+"\n"+FINAL_FECHA_C+"\n"
+                + INICIO_FECHA_M+"\n"+fechaActual+"\n"+FINAL_FECHA_M+"\n"
+                + INICIO_USUARIO+"\n"+0+"\n"+FINAL_USUARIO+"\n"
+                + INICIO_G_USUARIO+"\n"+0+"\n"+FINAL_G_USUARIO+"\n"
+                + FINAL_INFORMACION                 + "\n"
+                + FINAL_BLOQUE                      + "\n";
         // Se crean el resto de bloques (libres)
-        for(int i = 1; i < cantidadBloques; i++){
+        for(int i = 2; i < cantidadBloques; i++){
             bloquesDisco
                     += INICIO_BLOQUE                    + "\n"
                     + INICIO_BLOQUE_SIGUIENTE+"\n-1\n"+FINAL_BLOQUE_SIGUIENTE+"\n"

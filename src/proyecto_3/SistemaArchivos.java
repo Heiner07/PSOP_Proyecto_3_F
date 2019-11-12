@@ -137,7 +137,7 @@ public class SistemaArchivos {
         }
         
         cargarDatos(instrucciones);
-
+        cargarCarpeta(1); // El bloque 1 contiene la carpeta root por cargar.
     }
     
     /**
@@ -274,7 +274,7 @@ public class SistemaArchivos {
                 comandoWhoAmI();
                 break;
             case "pwd":
-                // llamado al método
+                comandoPwd();
                 break;
             case "mkdir":
                 // llamado al método
@@ -560,6 +560,10 @@ public class SistemaArchivos {
     private void comandoWhoAmI(){
         System.out.println("username: "+usuarioActual.nombre);
         System.out.println("full name: "+usuarioActual.nombreCompleto);
+    }
+    
+    private void comandoPwd(){
+        System.out.println(rutaActual.ubicacion);
     }
     
     private Usuario obtenerUsuario(String usuario){
@@ -877,6 +881,39 @@ public class SistemaArchivos {
         archivo.close();
     }
     
+    private void cargarCarpeta(int numeroBloque) throws IOException{
+        Archivo carpeta;
+        Bloque bloqueCarpeta;
+        Boolean cargarCarpeta = true;
+        String[] lineasBloque;
+        int bloqueBuscado = numeroBloque;
+        int cantidadLineas;
+        int idUsuario, idGrupoUsuario;
+        String linea, nombre, ubicacion, permisos, fechaC, fechaM;
+        // Se obtiene la información de la carpeta.
+        bloqueCarpeta = ObtenerBloque(bloqueBuscado);
+        lineasBloque = bloqueCarpeta.contenido.split("\n");
+        cantidadLineas = lineasBloque.length;
+        int i = 9; // A partir de esta línea, empieza la info de la carpeta.
+        nombre = lineasBloque[i];
+        i++;i++;i++;
+        ubicacion = lineasBloque[i];
+        i++;i++;i++;
+        permisos = lineasBloque[i];
+        i++;i++;i++;
+        fechaC = lineasBloque[i];
+        i++;i++;i++;
+        fechaM = lineasBloque[i];
+        i++;i++;i++;
+        idUsuario = Integer.parseInt(lineasBloque[i]);
+        i++;i++;i++;
+        idGrupoUsuario = Integer.parseInt(lineasBloque[i]);
+        carpeta = new Archivo(0, 0, nombre, ubicacion, permisos, fechaC, fechaM,
+                usuarios.get(idUsuario), gruposUsuarios.get(idGrupoUsuario), 1,
+                true, null);
+        rutaActual = carpeta;
+    }
+    
     /**
      * Genera el contenido base del sistema de archivos.
      * @return String
@@ -884,8 +921,8 @@ public class SistemaArchivos {
     private String generarContenido(){
         cantidadBloques = (tamanioDisco * 1024) / 512;
         tamanioBloque = 512 * 1024;
-        String cBloquesLibres = "1";
-        for(int i = 1; i < cantidadBloques; i++){
+        String cBloquesLibres = "1,1";
+        for(int i = 2; i < cantidadBloques; i++){
             cBloquesLibres += ",0";
         }
         String bloquesDisco = EstructuraSistemaArchivos.obtenerContenidoInicial(

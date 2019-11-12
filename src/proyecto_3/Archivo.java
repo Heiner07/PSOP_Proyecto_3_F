@@ -19,11 +19,11 @@ public class Archivo {
     String nombre;
     String ubicacion;
     String permisos;
-    Date fechaCreacion;
-    Date ultimaModificacion;
+    String fechaCreacion;
+    String ultimaModificacion;
     Usuario propietario;
     GrupoUsuarios grupoUsuarios;
-    Bloque bloqueInicial;
+    int bloqueInicial;
     Boolean esCarpeta;
     Boolean estaAbierto;
     List<Archivo> contenido;
@@ -44,8 +44,8 @@ public class Archivo {
      * @param contenido 
      */
     public Archivo(int id, int tamanio, String nombre, String ubicacion,
-            String permisos, Date fechaCreacion, Date ultimaModificacion,
-            Usuario propietario, GrupoUsuarios grupoUsuarios, Bloque bloque,
+            String permisos, String fechaCreacion, String ultimaModificacion,
+            Usuario propietario, GrupoUsuarios grupoUsuarios, int bloque,
             Boolean estaAbierto, List<Archivo> contenido) {
         this.id = id;
         this.tamanio = tamanio;
