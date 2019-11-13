@@ -17,6 +17,7 @@ public class Bloque {
     int tamanioUsado;
     Boolean estaLibre;
     String contenido;
+    String nombre;
 
     /**
      * 
@@ -36,5 +37,11 @@ public class Bloque {
         this.id = id;
         this.bloqueSiguiente = bloqueSiguiente;
         this.contenido = contenido;
+    }
+    public Bloque(int id, int bloqueSiguiente, String contenido,String nombre){
+        this.id = id;
+        this.bloqueSiguiente = bloqueSiguiente;
+        this.contenido = contenido;
+        this.nombre = nombre;
     }
 }

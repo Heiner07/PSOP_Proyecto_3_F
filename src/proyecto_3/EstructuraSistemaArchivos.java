@@ -132,17 +132,23 @@ public class EstructuraSistemaArchivos {
                 + FINAL_BLOQUE                      + "\n";
         // Se crean el resto de bloques (libres)
         for(int i = 2; i < cantidadBloques; i++){
-            bloquesDisco
+            bloquesDisco += generarBloqueLibre(i);
+        }
+        return bloquesDisco;
+    }
+    public static String generarBloqueLibre(int i){
+        String bloque= "";
+        return bloque
                     += INICIO_BLOQUE                    + "\n"
                     + INICIO_BLOQUE_SIGUIENTE+"\n-1\n"+FINAL_BLOQUE_SIGUIENTE+"\n"
                     + INICIO_INFORMACION                + "\n"
                     + INICIO_ID+"\n"+i+"\n"+FINAL_ID    + "\n"
                     + FINAL_INFORMACION                 + "\n"
                     + FINAL_BLOQUE                      + "\n";
-        }
-        return bloquesDisco;
-    }
     
+        
+    
+    }
     public static String generarContenidoCarpeta(Archivo archivo){
         Calendar fecha = Calendar.getInstance();
         String fechaActual = fecha.get(Calendar.DATE)

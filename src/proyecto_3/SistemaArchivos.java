@@ -258,7 +258,7 @@ public class SistemaArchivos {
         }
     }
     
-    private void manejadorComandos(String linea) {
+    private void manejadorComandos(String linea) throws IOException {
         String[] elementos = linea.split(" ");
         String comando = elementos[0];
         switch (comando) {
@@ -288,6 +288,7 @@ public class SistemaArchivos {
                 comandoMkdir(elementos);
                 break;
             case "rm":
+                comandoRm(elementos);
                 // llamado al método
                 break;
             case "mv":
@@ -565,6 +566,107 @@ public class SistemaArchivos {
         }
     }
     
+    private boolean esArchivo(String nombreDocumento){
+        try{
+            int cont = 0;
+            for(char c : nombreDocumento.toCharArray()){
+                if('.' == c){
+                    cont++;
+                    if(cont == 2)return false;
+                } 
+            }
+            return true;
+        }catch(Exception e){           
+            return false;
+        
+        }
+        
+    }
+    
+    
+    
+   
+    private boolean verificarDocumento(Bloque bloque,String nombreDocumento) throws IOException{
+        String[] lineasBloque = bloque.contenido.split("\n");
+        int cantidadLineas = lineasBloque.length,idBloqueEliminar=1;
+        String linea,contenido = "";
+        boolean actualizarArchivo = false;
+        for(int i = 0; i < cantidadLineas; i++){
+            linea = lineasBloque[i];
+            //HAY QUE VERIFICAR SI TIENE BLOQUE SIGUIENTE VERIFICAR AHI SI ESTA LA CARPETA O ARCHIVO
+            if(linea.equals(EstructuraSistemaArchivos.INICIO_CARPETA) || linea.equals(EstructuraSistemaArchivos.INICIO_ARCHIVO) ){
+                String lineaEstructura = linea;
+                i++; //Para posicionarme en el id de la carpeta o el archivo
+                linea = lineasBloque[i];
+                //Verificamos que ese id este ocupado
+                int id = Integer.parseInt(linea);
+                if(bloquesLibres.get(id) == 1){
+                        Bloque bloqueVerificar = ObtenerBloque(id);   
+                        String[] lineasBloqueVerificar = bloqueVerificar.contenido.split("\n");
+                        //MODIFICAR LA COMPARACION DEL LARGO, LO COMPARO PARA VERIFICAR QUE ES UN ARCHIVO O CARPETA SIN NADA DENTRO
+                        //DEBO VERIFICAR LOS PERMISOS QUE TIENE
+                        if(bloqueVerificar.nombre.equals(nombreDocumento) && lineasBloqueVerificar.length == 31 && bloqueVerificar.bloqueSiguiente==-1){
+                            //Eliminamos el archivo o carpeta
+                            bloquesLibres.set(id,0);
+                            idBloqueEliminar = id;
+                            actualizarBloquesLibres();
+                            actualizarArchivo = true;
+                            i++;
+                        }else{
+                            contenido += (lineaEstructura + "\n");
+                            contenido += (linea + "\n");
+                        }
+                }
+            }else{
+                contenido += (linea + "\n");
+            
+            }
+        }
+        if(actualizarArchivo){
+            escribirBloque(bloque.id, contenido);
+            escribirBloque(idBloqueEliminar, EstructuraSistemaArchivos.generarBloqueLibre(idBloqueEliminar));
+            return true;
+            
+        }
+        else{
+            return false;
+        }
+
+    
+    
+    
+    }
+    private void comandoRm(String[] elementos) throws IOException{
+        if(elementos.length > 1){
+             String nombreDocumento = elementos[1];
+             if(esArchivo(nombreDocumento)){
+                 Bloque bloque = ObtenerBloque(1);//LA RUTA ACTUAL
+                 while(true){
+                     if(!verificarDocumento(bloque,nombreDocumento)){
+                         if(bloque.bloqueSiguiente != -1){
+                            bloque = ObtenerBloque(bloque.bloqueSiguiente);//Accedemos al siguiente bloque a verificar si esta ahi                        
+                         }else{
+                            System.out.println("No se encontró "+nombreDocumento);
+                            break;
+                         }
+                     }else{
+                        System.out.println("Se eliminó correctamente "+nombreDocumento);
+                        break;
+                     }
+                 
+                 }
+             }else{
+                
+             
+             
+             }
+            
+        
+        
+        }
+    
+    
+    }
     private void comandoWhoAmI(){
         System.out.println("username: "+usuarioActual.nombre);
         System.out.println("full name: "+usuarioActual.nombreCompleto);
@@ -572,6 +674,7 @@ public class SistemaArchivos {
     
     private void comandoPwd(){
         System.out.println(rutaActual.ubicacion);
+        
     }
     
     private void comandoMkdir(String[] elementos){
@@ -793,7 +896,7 @@ public class SistemaArchivos {
     
     private Bloque ObtenerBloque(int numeroBloque) throws FileNotFoundException, IOException{
         int bloqueS = -1;
-        String contenidoB = "", linea;
+        String contenidoB = "", linea,nombre="";
         Boolean leyendoBloque = false, leyendoBloqueS = false;
         RandomAccessFile archivo = new RandomAccessFile(nombreDisco, "r");
         archivo.seek(tamanioBloque * numeroBloque);
@@ -802,8 +905,11 @@ public class SistemaArchivos {
                 leyendoBloqueS = false;
                 bloqueS = Integer.parseInt(linea);
             }
-            
-            if(linea.equals(EstructuraSistemaArchivos.INICIO_BLOQUE)){                
+            if(linea.equals(EstructuraSistemaArchivos.INICIO_NOMBRE)){     
+                contenidoB += (linea + "\n");
+                linea = archivo.readLine();
+                nombre = linea;
+            }else if(linea.equals(EstructuraSistemaArchivos.INICIO_BLOQUE)){                
                 leyendoBloque = true;
             }else if(linea.equals(EstructuraSistemaArchivos.INICIO_BLOQUE_SIGUIENTE)){
                 leyendoBloqueS = true;
@@ -816,7 +922,7 @@ public class SistemaArchivos {
             }
         }
         archivo.close();
-        return new Bloque(numeroBloque, bloqueS, contenidoB);
+        return new Bloque(numeroBloque, bloqueS, contenidoB,nombre);
     }
     
     private int ObtenerBloqueLibre(){
