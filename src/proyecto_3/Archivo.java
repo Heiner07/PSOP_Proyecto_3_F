@@ -60,4 +60,16 @@ public class Archivo {
         this.estaAbierto = estaAbierto;
         this.contenido = contenido;
     }
+    
+    public Archivo(int id, int tamanio, String nombre, String ubicacion,
+            String permisos, Usuario propietario, GrupoUsuarios grupoUsuarios, int bloque) {
+        this.id = id;
+        this.tamanio = tamanio;
+        this.nombre = nombre;
+        this.ubicacion = ubicacion;
+        this.permisos = permisos;
+        this.propietario = propietario;
+        this.grupoUsuarios = grupoUsuarios;
+        this.bloqueInicial = bloque;
+    }
 }

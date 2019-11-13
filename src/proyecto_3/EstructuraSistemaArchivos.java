@@ -122,7 +122,7 @@ public class EstructuraSistemaArchivos {
                 + INICIO_INFORMACION                + "\n"
                 + INICIO_ID+"\n"+1+"\n"+FINAL_ID    + "\n"
                 + INICIO_NOMBRE+"\nroot\n"+FINAL_NOMBRE+"\n"
-                + INICIO_UBICACION+"\nroot/\n"+FINAL_UBICACION+"\n"
+                + INICIO_UBICACION+"\n/root/\n"+FINAL_UBICACION+"\n"
                 + INICIO_PERMISOS+"\nPERMISOS\n"+FINAL_PERMISOS+"\n"
                 + INICIO_FECHA_C+"\n"+fechaActual+"\n"+FINAL_FECHA_C+"\n"
                 + INICIO_FECHA_M+"\n"+fechaActual+"\n"+FINAL_FECHA_M+"\n"
@@ -141,6 +141,37 @@ public class EstructuraSistemaArchivos {
                     + FINAL_BLOQUE                      + "\n";
         }
         return bloquesDisco;
+    }
+    
+    public static String generarContenidoCarpeta(Archivo archivo){
+        Calendar fecha = Calendar.getInstance();
+        String fechaActual = fecha.get(Calendar.DATE)
+                + "/" + fecha.get(Calendar.MONTH)
+                + "/" + fecha.get(Calendar.YEAR);
+        String carpeta
+                // Se define el nombre
+                = INICIO_NOMBRE+"\n"+archivo.nombre+"\n"+FINAL_NOMBRE+"\n"
+                // Se define la ubicación
+                + INICIO_UBICACION+"\n"+archivo.ubicacion+"\n"+FINAL_UBICACION+"\n"
+                // Se definen los permisos
+                + INICIO_PERMISOS+"\nPERMISOS\n"+FINAL_PERMISOS+"\n"
+                // Se establece la fecha de creación
+                + INICIO_FECHA_C+"\n"+fechaActual+"\n"+FINAL_FECHA_C+"\n"
+                // Se establece la fecha de modificación
+                + INICIO_FECHA_M+"\n"+fechaActual+"\n"+FINAL_FECHA_M+"\n"
+                // Se establece el usuario propietario.
+                + INICIO_USUARIO+"\n"+archivo.propietario.id+"\n"+FINAL_USUARIO+"\n"
+                // Se establece el grupo de usuario del archivo
+                + INICIO_G_USUARIO+"\n"+archivo.grupoUsuarios.id+"\n"+FINAL_G_USUARIO;
+        return carpeta;
+    }
+    
+    public static String generarContenidoReferenciaCarpeta(Archivo archivo){
+        String referencia
+                = INICIO_CARPETA    + "\n"
+                + archivo.bloqueInicial        + "\n"
+                + FINAL_CARPETA;
+        return referencia;
     }
     
     /**

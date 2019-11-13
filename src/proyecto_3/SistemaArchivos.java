@@ -277,7 +277,7 @@ public class SistemaArchivos {
                 comandoPwd();
                 break;
             case "mkdir":
-                // llamado al método
+                comandoMkdir(elementos);
                 break;
             case "rm":
                 // llamado al método
@@ -566,6 +566,52 @@ public class SistemaArchivos {
         System.out.println(rutaActual.ubicacion);
     }
     
+    private void comandoMkdir(String[] elementos){
+        if(elementos.length > 1){
+            String nombreCarpeta = elementos[1];
+            // Comprobar si no existe otra carpeta con el mismo nombre.
+            int bloqueLibre = ObtenerBloqueLibre();
+            if(bloqueLibre != -1){
+                Archivo carpetaNueva = new Archivo(0, 0, nombreCarpeta,
+                        rutaActual.ubicacion + nombreCarpeta + "/",
+                        "PERMISOS", rutaActual.propietario,
+                        rutaActual.grupoUsuarios, bloqueLibre);
+                if(escribirCarpeta(carpetaNueva)){
+                    System.out.println("¡Carpeta creada!");
+                }else{
+                    System.out.println("Error al crear la carpeta.");
+                }
+            }else{
+                System.out.println("Error no hay espacio.");
+            }
+        }else{
+            System.out.println("Especifique un nombre de carpeta");
+        }
+    }
+    
+    private Boolean escribirCarpeta(Archivo carpetaNueva){
+        String contenidoCarpeta = EstructuraSistemaArchivos.generarContenidoCarpeta(carpetaNueva);
+        RandomAccessFile archivo;
+        Bloque bloqueDestino, bloqueActual;
+        String bloqueCarpeta, referenciaCarpeta;
+        try{
+            actualizarBloquesLibres();// En el comando mkdir se busca un bloque libre, aquí se actualizan en el archivo
+            archivo = new RandomAccessFile(nombreDisco, "rw");
+            bloqueDestino = ObtenerBloque(carpetaNueva.bloqueInicial);
+            bloqueCarpeta = agregarCarpetaCadena(bloqueDestino, contenidoCarpeta, true);
+            escribirBloque(bloqueDestino, bloqueCarpeta);
+            bloqueActual = ObtenerBloque(rutaActual.bloqueInicial);
+            // Falta comprobar si la referecia cabe
+            referenciaCarpeta = agregarReferenciaCarpeta(bloqueActual,
+                    EstructuraSistemaArchivos.generarContenidoReferenciaCarpeta(carpetaNueva), true);
+            escribirBloque(bloqueActual, referenciaCarpeta);
+            archivo.close();
+            return true;
+        }catch(IOException e){
+            return false;
+        }
+    }
+    
     private Usuario obtenerUsuario(String usuario){
         int cantidadUsuarios = usuarios.size();
         for (int i = 0; i < cantidadUsuarios; i++) {
@@ -782,6 +828,48 @@ public class SistemaArchivos {
     }
     
     /**
+     * Agrega la información de una carpeta en el bloque indicado.
+     * Se utiliza para darle el formato de carpeta a un bloque.
+     * @param bloque
+     * @param carpeta
+     * @return String
+     */
+    private String agregarCarpetaCadena(Bloque bloque, String carpeta,
+            Boolean esBloqueNuevo){
+        String[] lineasBloque = bloque.contenido.split("\n");
+        int cantidadLineas = lineasBloque.length;
+        String cadenaFinal = "", linea;
+        for(int i = 0; i < cantidadLineas; i++){
+            linea = lineasBloque[i];
+            if(linea.equals(EstructuraSistemaArchivos.FINAL_INFORMACION)){
+                cadenaFinal += carpeta + "\n";
+            }
+            cadenaFinal += linea + "\n";
+        }return cadenaFinal;
+    }
+    
+    /**
+     * Agrega la referencia de una carpeta en el bloque indicado.
+     * Se utiliza para "agregar" una carpeta a una carpeta en un bloque.
+     * @param bloque
+     * @param carpeta
+     * @return String
+     */
+    private String agregarReferenciaCarpeta(Bloque bloque, String carpeta,
+            Boolean esBloqueNuevo){
+        String[] lineasBloque = bloque.contenido.split("\n");
+        int cantidadLineas = lineasBloque.length;
+        String cadenaFinal = "", linea;
+        for(int i = 0; i < cantidadLineas; i++){
+            linea = lineasBloque[i];
+            if(linea.equals(EstructuraSistemaArchivos.FINAL_INFORMACION)){
+                cadenaFinal += carpeta + "\n";
+            }
+            cadenaFinal += linea + "\n";
+        }return cadenaFinal;
+    }
+    
+    /**
      * Agrega la información de un grupo usuarios en el bloque indicado
      * @param bloque
      * @param grupoUsuario
@@ -879,6 +967,10 @@ public class SistemaArchivos {
         archivo.seek(tamanioBloque * bloque.id);
         archivo.writeBytes(contenido);
         archivo.close();
+    }
+    
+    private void crearCarpeta(){
+        
     }
     
     private void cargarCarpeta(int numeroBloque) throws IOException{
