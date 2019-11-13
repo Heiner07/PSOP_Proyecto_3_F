@@ -607,12 +607,12 @@ public class SistemaArchivos {
             archivo = new RandomAccessFile(nombreDisco, "rw");
             bloqueDestino = ObtenerBloque(carpetaNueva.bloqueInicial);
             bloqueCarpeta = agregarCarpetaCadena(bloqueDestino, contenidoCarpeta, true);
-            escribirBloque(bloqueDestino, bloqueCarpeta);
+            escribirBloque(bloqueDestino.id, bloqueCarpeta);
             bloqueActual = ObtenerBloque(rutaActual.bloqueInicial);
             // Falta comprobar si la referecia cabe
             referenciaCarpeta = agregarReferenciaCarpeta(bloqueActual,
                     EstructuraSistemaArchivos.generarContenidoReferenciaCarpeta(carpetaNueva), true);
-            escribirBloque(bloqueActual, referenciaCarpeta);
+            escribirBloque(bloqueActual.id, referenciaCarpeta);
             archivo.close();
             return true;
         }catch(IOException e){
