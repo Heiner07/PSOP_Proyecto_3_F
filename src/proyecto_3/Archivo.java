@@ -72,4 +72,9 @@ public class Archivo {
         this.grupoUsuarios = grupoUsuarios;
         this.bloqueInicial = bloque;
     }
+    
+    public Archivo(int bloque, Boolean esCarpeta){
+        this.bloqueInicial = bloque;
+        this.esCarpeta = esCarpeta;
+    }
 }

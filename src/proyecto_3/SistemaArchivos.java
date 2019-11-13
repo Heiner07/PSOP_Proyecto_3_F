@@ -75,7 +75,7 @@ public class SistemaArchivos {
                 System.out.print(usuarioActual.nombre+"@miFS: ");
                 lineaActual = entradaComandos.nextLine();
                 historialComandos += lineaActual + "\n";
-                if (lineaActual.equals("exit")) {
+                if (lineaActual.equals("poweroff")) {
                     break;
                 }
                 manejadorComandos(lineaActual);
@@ -306,7 +306,7 @@ public class SistemaArchivos {
                 // llamado al método
                 break;
             case "touch":
-                // llamado al método
+                comandoTouch(elementos);
                 break;
             case "cat":
                 // llamado al método
@@ -575,46 +575,108 @@ public class SistemaArchivos {
     }
     
     private void comandoMkdir(String[] elementos){
-        if(elementos.length > 1){
-            String nombreCarpeta = elementos[1];
-            // Comprobar si no existe otra carpeta con el mismo nombre.
-            int bloqueLibre = ObtenerBloqueLibre();
-            if(bloqueLibre != -1){
-                Archivo carpetaNueva = new Archivo(0, 0, nombreCarpeta,
-                        rutaActual.ubicacion + nombreCarpeta + "/",
-                        "PERMISOS", rutaActual.propietario,
-                        rutaActual.grupoUsuarios, bloqueLibre);
-                if(escribirCarpeta(carpetaNueva)){
-                    System.out.println("¡Carpeta creada!");
+        int cantidadElementos = elementos.length;
+        if(cantidadElementos > 1){
+            String nombreCarpeta;
+            int bloqueLibre;
+            Archivo carpetaNueva;
+            for(int i = 1; i < cantidadElementos; i++){
+                nombreCarpeta = elementos[i];
+                // Comprobar si no existe otra carpeta con el mismo nombre.
+                bloqueLibre = ObtenerBloqueLibre();
+                if(bloqueLibre != -1){
+                    carpetaNueva = new Archivo(0, 0, nombreCarpeta,
+                            rutaActual.ubicacion + nombreCarpeta + "/",
+                            "PERMISOS", rutaActual.propietario,
+                            rutaActual.grupoUsuarios, bloqueLibre);
+                    if(escribirCarpetaArchivo(carpetaNueva, true)){
+                        System.out.println("¡Carpeta creada!");
+                    }else{
+                        System.out.println("Error al crear la carpeta.");
+                    }
                 }else{
-                    System.out.println("Error al crear la carpeta.");
+                    System.out.println("Error no hay espacio.");
                 }
-            }else{
-                System.out.println("Error no hay espacio.");
             }
         }else{
             System.out.println("Especifique un nombre de carpeta");
         }
     }
     
-    private Boolean escribirCarpeta(Archivo carpetaNueva){
-        String contenidoCarpeta = EstructuraSistemaArchivos.generarContenidoCarpeta(carpetaNueva);
-        RandomAccessFile archivo;
+    private void comandoTouch(String[] elementos){
+        int cantidadElementos = elementos.length;
+        if(cantidadElementos > 1){
+            String nombreArchivo;
+            int bloqueLibre;
+            Archivo archivoNuevo;
+            for(int i = 1; i < cantidadElementos; i++){
+                nombreArchivo = elementos[i];
+                // Comprobar si no existe otra carpeta con el mismo nombre.
+                bloqueLibre = ObtenerBloqueLibre();
+                if(bloqueLibre != -1){
+                    archivoNuevo = new Archivo(0, 0, nombreArchivo,
+                            rutaActual.ubicacion + nombreArchivo + "/",
+                            "PERMISOS", rutaActual.propietario,
+                            rutaActual.grupoUsuarios, bloqueLibre);
+                    if(escribirCarpetaArchivo(archivoNuevo, false)){
+                        System.out.println("¡Archivo creado!");
+                    }else{
+                        System.out.println("Error al crear el archivo.");
+                    }
+                }else{
+                    System.out.println("Error no hay espacio.");
+                }
+            }
+        }else{
+            System.out.println("Especifique un nombre de archivo");
+        }
+    }
+    
+    private Boolean escribirCarpetaArchivo(Archivo carpetaArchivoNuevo, Boolean esCarpeta){
+        String contenidoCarpeta = EstructuraSistemaArchivos.generarContenidoCarpetaArchivo(carpetaArchivoNuevo);
         Bloque bloqueDestino, bloqueActual;
         String bloqueCarpeta, referenciaCarpeta;
+        String contenidoReferencia =
+                EstructuraSistemaArchivos.generarContenidoReferenciaCarpetaArchivo(carpetaArchivoNuevo, esCarpeta);
+        Boolean hayEspacio = false;
+        int idBloqueBuscado = rutaActual.bloqueInicial; // EL bloque con la carpeta actual
         try{
-            actualizarBloquesLibres();// En el comando mkdir se busca un bloque libre, aquí se actualizan en el archivo
-            archivo = new RandomAccessFile(nombreDisco, "rw");
-            bloqueDestino = ObtenerBloque(carpetaNueva.bloqueInicial);
-            bloqueCarpeta = agregarCarpetaCadena(bloqueDestino, contenidoCarpeta, true);
-            escribirBloque(bloqueDestino.id, bloqueCarpeta);
-            bloqueActual = ObtenerBloque(rutaActual.bloqueInicial);
-            // Falta comprobar si la referecia cabe
-            referenciaCarpeta = agregarReferenciaCarpeta(bloqueActual,
-                    EstructuraSistemaArchivos.generarContenidoReferenciaCarpeta(carpetaNueva), true);
-            escribirBloque(bloqueActual.id, referenciaCarpeta);
-            archivo.close();
-            return true;
+            while(true){
+                // Ciclo utilizado para buscar un bloque nuevo, si la referencia no cabe en el actual.
+                bloqueActual = ObtenerBloque(idBloqueBuscado);
+                referenciaCarpeta = agregarReferenciaCarpeta(bloqueActual, contenidoReferencia);
+                if(hayEspacioEnBloque(bloqueActual, referenciaCarpeta)){
+                    hayEspacio = true;
+                    break;
+                }else if(bloqueActual.bloqueSiguiente == -1){
+                    idBloqueBuscado = ObtenerBloqueLibre();
+                    if(idBloqueBuscado == -1){
+                        hayEspacio = false;
+                        break;
+                    }else{
+                        // Si es un bloque nuevo, entonces le actualizo el bloque siguiente al bloque actual.
+                        actualizarIdSiguienteBloque(bloqueActual, idBloqueBuscado);
+                    }
+                }else{
+                    idBloqueBuscado = bloqueActual.bloqueSiguiente;
+                }
+            }
+            if(hayEspacio){
+                escribirBloque(bloqueActual.id, referenciaCarpeta);// Se escribe la referencia a la carpeta.
+                actualizarBloquesLibres();// En el comando mkdir se busca un bloque libre, aquí se actualizan en el archivo
+                bloqueDestino = ObtenerBloque(carpetaArchivoNuevo.bloqueInicial);
+                bloqueCarpeta = agregarCarpetaCadena(bloqueDestino, contenidoCarpeta);
+                escribirBloque(bloqueDestino.id, bloqueCarpeta);// Se escribe el bloque con la carpeta.
+                
+                // Se recarga la carpeta actual para obtener la refencia nueva.
+                cargarCarpeta(rutaActual.bloqueInicial);
+                    
+                return true;
+            }else{
+                // Si no hay espacio, se libera el bloque que se iba a utilizar para la carpeta nueva.
+                bloquesLibres.set(carpetaArchivoNuevo.bloqueInicial, 0);
+                return false;
+            }
         }catch(IOException e){
             return false;
         }
@@ -840,7 +902,7 @@ public class SistemaArchivos {
     private Boolean hayEspacioEnBloque(Bloque bloque, String contenBloqueNuevo){
         // Se reservan 80 bytes para almacenar los carácteres del valor máximo de int
         int tamanioReservaIdS = 80 - String.valueOf(bloque.bloqueSiguiente).getBytes().length;
-      
+        
         return contenBloqueNuevo.getBytes().length + tamanioReservaIdS < tamanioBloque;
     }
     
@@ -851,8 +913,7 @@ public class SistemaArchivos {
      * @param carpeta
      * @return String
      */
-    private String agregarCarpetaCadena(Bloque bloque, String carpeta,
-            Boolean esBloqueNuevo){
+    private String agregarCarpetaCadena(Bloque bloque, String carpeta){
         String[] lineasBloque = bloque.contenido.split("\n");
         int cantidadLineas = lineasBloque.length;
         String cadenaFinal = "", linea;
@@ -872,8 +933,7 @@ public class SistemaArchivos {
      * @param carpeta
      * @return String
      */
-    private String agregarReferenciaCarpeta(Bloque bloque, String carpeta,
-            Boolean esBloqueNuevo){
+    private String agregarReferenciaCarpeta(Bloque bloque, String carpeta){
         String[] lineasBloque = bloque.contenido.split("\n");
         int cantidadLineas = lineasBloque.length;
         String cadenaFinal = "", linea;
@@ -998,28 +1058,49 @@ public class SistemaArchivos {
         int bloqueBuscado = numeroBloque;
         int cantidadLineas;
         int idUsuario, idGrupoUsuario;
+        int idArchivoCarpeta;
         String linea, nombre, ubicacion, permisos, fechaC, fechaM;
+        List<Archivo> archivos = new ArrayList<>();
         // Se obtiene la información de la carpeta.
         bloqueCarpeta = ObtenerBloque(bloqueBuscado);
         lineasBloque = bloqueCarpeta.contenido.split("\n");
         cantidadLineas = lineasBloque.length;
         int i = 9; // A partir de esta línea, empieza la info de la carpeta.
         nombre = lineasBloque[i];
-        i++;i++;i++;
+        i += 3;
         ubicacion = lineasBloque[i];
-        i++;i++;i++;
+        i += 3;
         permisos = lineasBloque[i];
-        i++;i++;i++;
+        i += 3;
         fechaC = lineasBloque[i];
-        i++;i++;i++;
+        i += 3;
         fechaM = lineasBloque[i];
-        i++;i++;i++;
+        i += 3;
         idUsuario = Integer.parseInt(lineasBloque[i]);
-        i++;i++;i++;
+        i += 3;
         idGrupoUsuario = Integer.parseInt(lineasBloque[i]);
+        
+        for(; i < cantidadLineas; i++){
+            linea = lineasBloque[i];
+            if(linea.equals(EstructuraSistemaArchivos.INICIO_CARPETA)){
+                i++;
+                idArchivoCarpeta = Integer.parseInt(lineasBloque[i]);
+                archivos.add(new Archivo(idArchivoCarpeta, true));
+                System.out.println("Carpeta, id: "+idArchivoCarpeta);
+                i++;
+            }else if(linea.equals(EstructuraSistemaArchivos.INICIO_ARCHIVO)){
+                i++;
+                idArchivoCarpeta = Integer.parseInt(lineasBloque[i]);
+                archivos.add(new Archivo(idArchivoCarpeta, false));
+                System.out.println("Archivo, id: "+idArchivoCarpeta);
+                i++;
+            }
+        }
+        
         carpeta = new Archivo(0, 0, nombre, ubicacion, permisos, fechaC, fechaM,
                 usuarios.get(idUsuario), gruposUsuarios.get(idGrupoUsuario), 1,
                 true, null);
+        
         rutaActual = carpeta;
     }
     
