@@ -593,7 +593,6 @@ public class SistemaArchivos {
         boolean actualizarArchivo = false;
         for(int i = 0; i < cantidadLineas; i++){
             linea = lineasBloque[i];
-            //HAY QUE VERIFICAR SI TIENE BLOQUE SIGUIENTE VERIFICAR AHI SI ESTA LA CARPETA O ARCHIVO
             if(linea.equals(EstructuraSistemaArchivos.INICIO_CARPETA) || linea.equals(EstructuraSistemaArchivos.INICIO_ARCHIVO) ){
                 String lineaEstructura = linea;
                 i++; //Para posicionarme en el id de la carpeta o el archivo
