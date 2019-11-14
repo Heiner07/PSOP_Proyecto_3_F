@@ -566,22 +566,7 @@ public class SistemaArchivos {
         }
     }
     
-    private boolean esArchivo(String nombreDocumento){
-        try{
-            int cont = 0;
-            for(char c : nombreDocumento.toCharArray()){
-                if('.' == c){
-                    cont++;
-                    if(cont == 2)return false;
-                } 
-            }
-            return true;
-        }catch(Exception e){           
-            return false;
-        
-        }
-        
-    }
+    
     
     
     
@@ -635,27 +620,79 @@ public class SistemaArchivos {
     
     
     }
+    
+    private boolean esRuta(String cadena){   
+        for(char c : cadena.toCharArray()){
+            if('/' == c){
+                return true;
+            } 
+        }
+        return false; 
+    }
+    
+    private boolean esArchivo(String cadena){
+        for(char c : cadena.toCharArray()){
+            if('.' == c){
+                return true;
+            } 
+        }
+        return false; 
+    
+    }
+    
+    
+    private boolean verificarEnBloqueS(Bloque bloque, String cadena) throws IOException{
+        while(true){
+             if(!verificarDocumento(bloque,cadena)){
+                 if(bloque.bloqueSiguiente != -1){
+                    bloque = ObtenerBloque(bloque.bloqueSiguiente);//Accedemos al siguiente bloque a verificar si esta ahi                        
+                 }else{
+                    return false;
+                 }
+             }else{
+                return true;
+             }
+
+         }
+    }
     private void comandoRm(String[] elementos) throws IOException{
         if(elementos.length > 1){
-             String nombreDocumento = elementos[1];
-             if(esArchivo(nombreDocumento)){
+             String cadena = elementos[1];
+             if(!esRuta(cadena)){
                  Bloque bloque = ObtenerBloque(1);//LA RUTA ACTUAL
-                 while(true){
-                     if(!verificarDocumento(bloque,nombreDocumento)){
-                         if(bloque.bloqueSiguiente != -1){
-                            bloque = ObtenerBloque(bloque.bloqueSiguiente);//Accedemos al siguiente bloque a verificar si esta ahi                        
-                         }else{
-                            System.out.println("No se encontró "+nombreDocumento);
-                            break;
+                 if(verificarEnBloqueS(bloque,cadena)){
+                     System.out.println("Se eliminó correctamente "+cadena);
+                 
+                 }else{System.out.println("Error al eliminar "+cadena);}
+                
+             }else{
+                if(cadena.equals("/root")){
+                    //ERROR Y SALGO
+                
+                }
+                String[] lineasRuta = cadena.split("/");
+                String rutaInicial = lineasRuta[lineasRuta.length-2];
+                String archivoDirectorio = lineasRuta[lineasRuta.length-1];
+                //if(!esArchivo(lineasRuta[lineasRuta.length-1])){
+              //      cadena+="/";
+               // }
+                 
+                 //Empieza desde 1 porque el bloque 0 es encabezado y 1 es carpeta root
+                 for(int i=1;i<bloquesLibres.size();i++){
+                     int idOcupado = bloquesLibres.get(i);
+                     if(idOcupado == 1){
+                         Bloque bloque = ObtenerBloque(i);
+                         if(bloque.nombre.equals(rutaInicial)){
+                             if(verificarEnBloqueS(bloque,archivoDirectorio)){
+                                 System.out.println("Se eliminó correctamente "+archivoDirectorio);     
+                             }else{System.out.println("Error al eliminar "+archivoDirectorio);}
+                             
+                         
                          }
-                     }else{
-                        System.out.println("Se eliminó correctamente "+nombreDocumento);
-                        break;
+                         
                      }
                  
                  }
-             }else{
-                
              
              
              }
@@ -895,7 +932,7 @@ public class SistemaArchivos {
     
     private Bloque ObtenerBloque(int numeroBloque) throws FileNotFoundException, IOException{
         int bloqueS = -1;
-        String contenidoB = "", linea,nombre="";
+        String contenidoB = "", linea,nombre="",ubicacion = "";
         Boolean leyendoBloque = false, leyendoBloqueS = false;
         RandomAccessFile archivo = new RandomAccessFile(nombreDisco, "r");
         archivo.seek(tamanioBloque * numeroBloque);
@@ -904,7 +941,11 @@ public class SistemaArchivos {
                 leyendoBloqueS = false;
                 bloqueS = Integer.parseInt(linea);
             }
-            if(linea.equals(EstructuraSistemaArchivos.INICIO_NOMBRE)){     
+            if(linea.equals(EstructuraSistemaArchivos.INICIO_UBICACION)){     
+                contenidoB += (linea + "\n");
+                linea = archivo.readLine();
+                ubicacion = linea;
+            }else if(linea.equals(EstructuraSistemaArchivos.INICIO_NOMBRE)){     
                 contenidoB += (linea + "\n");
                 linea = archivo.readLine();
                 nombre = linea;
@@ -921,7 +962,7 @@ public class SistemaArchivos {
             }
         }
         archivo.close();
-        return new Bloque(numeroBloque, bloqueS, contenidoB,nombre);
+        return new Bloque(numeroBloque, bloqueS, contenidoB,nombre,ubicacion);
     }
     
     private int ObtenerBloqueLibre(){

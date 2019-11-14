@@ -18,6 +18,7 @@ public class Bloque {
     Boolean estaLibre;
     String contenido;
     String nombre;
+    String ubicacion;
 
     /**
      * 
@@ -38,10 +39,11 @@ public class Bloque {
         this.bloqueSiguiente = bloqueSiguiente;
         this.contenido = contenido;
     }
-    public Bloque(int id, int bloqueSiguiente, String contenido,String nombre){
+    public Bloque(int id, int bloqueSiguiente, String contenido,String nombre,String ubicacion){
         this.id = id;
         this.bloqueSiguiente = bloqueSiguiente;
         this.contenido = contenido;
         this.nombre = nombre;
+        this.ubicacion = ubicacion;
     }
 }
