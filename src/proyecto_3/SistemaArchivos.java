@@ -685,25 +685,46 @@ public class SistemaArchivos {
             Archivo carpetaNueva;
             for(int i = 1; i < cantidadElementos; i++){
                 nombreCarpeta = elementos[i];
-                // Comprobar si no existe otra carpeta con el mismo nombre.
-                bloqueLibre = ObtenerBloqueLibre();
-                if(bloqueLibre != -1){
-                    carpetaNueva = new Archivo(0, 0, nombreCarpeta,
-                            rutaActual.ubicacion + nombreCarpeta + "/",
-                            "PERMISOS", rutaActual.propietario,
-                            rutaActual.grupoUsuarios, bloqueLibre);
-                    if(escribirCarpetaArchivo(carpetaNueva, true)){
-                        System.out.println("¡Carpeta creada!");
+                if(!elementoRepetidoEnCarpeta(nombreCarpeta)){
+                    bloqueLibre = ObtenerBloqueLibre();
+                    if(bloqueLibre != -1){
+                        carpetaNueva = new Archivo(0, 0, nombreCarpeta,
+                                rutaActual.ubicacion + nombreCarpeta + "/",
+                                "PERMISOS", rutaActual.propietario,
+                                rutaActual.grupoUsuarios, bloqueLibre);
+                        if(escribirCarpetaArchivo(carpetaNueva, true)){
+                            System.out.println("¡Carpeta creada!");
+                        }else{
+                            System.out.println("Error al crear la carpeta.");
+                        }
                     }else{
-                        System.out.println("Error al crear la carpeta.");
+                        System.out.println("Error no hay espacio.");
                     }
-                }else{
-                    System.out.println("Error no hay espacio.");
                 }
             }
         }else{
             System.out.println("Especifique un nombre de carpeta");
         }
+    }
+    
+    private Boolean elementoRepetidoEnCarpeta(String nombre){
+        List<Archivo> elementos = rutaActual.contenido;
+        int cantidadElementos = elementos.size();
+        Archivo elemento;
+        try{
+            for(int i = 0; i < cantidadElementos; i++){
+                elemento = elementos.get(i);
+                elemento = cargarCarpetaArchivo(elemento.bloqueInicial, elemento.esCarpeta);
+                if(elemento.nombre.equals(nombre)){
+                    System.out.println("Error. Ya existe un elemento con el nombre "+nombre);
+                    return true;
+                }
+            }
+        }catch(IOException e){
+            System.out.println("Error leyendo la carpeta.");
+            return true;
+        }
+        return false;
     }
     
     private void comandoCD(String[] elementos){
@@ -758,20 +779,21 @@ public class SistemaArchivos {
             Archivo archivoNuevo;
             for(int i = 1; i < cantidadElementos; i++){
                 nombreArchivo = elementos[i];
-                // Comprobar si no existe otra carpeta con el mismo nombre.
-                bloqueLibre = ObtenerBloqueLibre();
-                if(bloqueLibre != -1){
-                    archivoNuevo = new Archivo(0, 0, nombreArchivo,
-                            rutaActual.ubicacion + nombreArchivo,
-                            "PERMISOS", rutaActual.propietario,
-                            rutaActual.grupoUsuarios, bloqueLibre);
-                    if(escribirCarpetaArchivo(archivoNuevo, false)){
-                        System.out.println("¡Archivo creado!");
+                if(!elementoRepetidoEnCarpeta(nombreArchivo)){
+                    bloqueLibre = ObtenerBloqueLibre();
+                    if(bloqueLibre != -1){
+                        archivoNuevo = new Archivo(0, 0, nombreArchivo,
+                                rutaActual.ubicacion + nombreArchivo,
+                                "PERMISOS", rutaActual.propietario,
+                                rutaActual.grupoUsuarios, bloqueLibre);
+                        if(escribirCarpetaArchivo(archivoNuevo, false)){
+                            System.out.println("¡Archivo creado!");
+                        }else{
+                            System.out.println("Error al crear el archivo.");
+                        }
                     }else{
-                        System.out.println("Error al crear el archivo.");
+                        System.out.println("Error no hay espacio.");
                     }
-                }else{
-                    System.out.println("Error no hay espacio.");
                 }
             }
         }else{
