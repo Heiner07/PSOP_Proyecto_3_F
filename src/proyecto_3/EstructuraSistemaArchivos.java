@@ -115,12 +115,30 @@ public class EstructuraSistemaArchivos {
                 + FINAL_INFORMACION                                         +"\n"
                 // Se cierra el bloque
                 + FINAL_BLOQUE                                              +"\n";
-        // Se crea el bloque con la carpeta root
+        // Se crea el bloque con la carpeta raíz
         bloquesDisco
                 += INICIO_BLOQUE                    + "\n"
                 + INICIO_BLOQUE_SIGUIENTE+"\n-1\n"+FINAL_BLOQUE_SIGUIENTE+"\n"
                 + INICIO_INFORMACION                + "\n"
                 + INICIO_ID+"\n"+1+"\n"+FINAL_ID    + "\n"
+                + INICIO_NOMBRE+"\nraiz\n"+FINAL_NOMBRE+"\n"
+                + INICIO_UBICACION+"\n/\n"+FINAL_UBICACION+"\n"
+                + INICIO_PERMISOS+"\nPERMISOS\n"+FINAL_PERMISOS+"\n"
+                + INICIO_FECHA_C+"\n"+fechaActual+"\n"+FINAL_FECHA_C+"\n"
+                + INICIO_FECHA_M+"\n"+fechaActual+"\n"+FINAL_FECHA_M+"\n"
+                + INICIO_USUARIO+"\n"+0+"\n"+FINAL_USUARIO+"\n"
+                + INICIO_G_USUARIO+"\n"+0+"\n"+FINAL_G_USUARIO+"\n"
+                + INICIO_CARPETA    + "\n"
+                + "2\n"
+                + FINAL_CARPETA     + "\n"
+                + FINAL_INFORMACION                 + "\n"
+                + FINAL_BLOQUE                      + "\n";
+        // Se crea el bloque con la carpeta root
+        bloquesDisco
+                += INICIO_BLOQUE                    + "\n"
+                + INICIO_BLOQUE_SIGUIENTE+"\n-1\n"+FINAL_BLOQUE_SIGUIENTE+"\n"
+                + INICIO_INFORMACION                + "\n"
+                + INICIO_ID+"\n"+2+"\n"+FINAL_ID    + "\n"
                 + INICIO_NOMBRE+"\nroot\n"+FINAL_NOMBRE+"\n"
                 + INICIO_UBICACION+"\n/root/\n"+FINAL_UBICACION+"\n"
                 + INICIO_PERMISOS+"\nPERMISOS\n"+FINAL_PERMISOS+"\n"
@@ -131,7 +149,7 @@ public class EstructuraSistemaArchivos {
                 + FINAL_INFORMACION                 + "\n"
                 + FINAL_BLOQUE                      + "\n";
         // Se crean el resto de bloques (libres)
-        for(int i = 2; i < cantidadBloques; i++){
+        for(int i = 3; i < cantidadBloques; i++){
             bloquesDisco += generarBloqueLibre(i);
         }
         return bloquesDisco;

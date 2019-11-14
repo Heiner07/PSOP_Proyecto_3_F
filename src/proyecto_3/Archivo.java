@@ -60,6 +60,7 @@ public class Archivo {
         this.bloqueInicial = bloque;
         this.estaAbierto = estaAbierto;
         this.contenido = contenido;
+        this.carpetaContenedora = null;
     }
     
     public Archivo(int id, int tamanio, String nombre, String ubicacion,
@@ -72,6 +73,7 @@ public class Archivo {
         this.propietario = propietario;
         this.grupoUsuarios = grupoUsuarios;
         this.bloqueInicial = bloque;
+        this.carpetaContenedora = null;
     }
     
     public Archivo(int bloque, Boolean esCarpeta){

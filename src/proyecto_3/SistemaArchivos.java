@@ -144,7 +144,8 @@ public class SistemaArchivos {
         }
         
         cargarDatos(instrucciones);
-        rutaActual = cargarCarpetaArchivo(1, true); // El bloque 1 contiene la carpeta root por cargar.
+        rutaActual = cargarCarpetaArchivo(1, true); // El bloque 1 contiene la carpeta raíz por cargar.
+        comandoCD(new String[]{"", "root"});
     }
     
     /**
@@ -707,7 +708,24 @@ public class SistemaArchivos {
     
     private void comandoCD(String[] elementos){
         int cantidadElementos = elementos.length;
-        entrarEnCarpeta(elementos[1]);
+        if(cantidadElementos > 1){
+            String parametro = elementos[1];
+            if(parametro.equals("..")){
+                salirDeCarpeta();
+            }else{
+                entrarEnCarpeta(parametro);
+            }
+        }else{
+            System.out.println("Especifique una carpeta.");
+        }
+    }
+    
+    private void salirDeCarpeta(){
+        if(rutaActual.carpetaContenedora != null){
+            rutaActual = rutaActual.carpetaContenedora;
+        }else{
+            System.out.println("Ya está ubicado en la raíz");
+        }
     }
     
     private void entrarEnCarpeta(String nombre){
@@ -1238,7 +1256,6 @@ public class SistemaArchivos {
     private Archivo cargarCarpetaArchivo(int numeroBloque, Boolean esCarpeta) throws IOException{
         Archivo carpetaArchivo;
         Bloque bloqueCarpeta;
-        Boolean cargarCarpeta = true;
         String[] lineasBloque;
         int bloqueBuscado = numeroBloque;
         int cantidadLineas;
@@ -1246,11 +1263,11 @@ public class SistemaArchivos {
         int idArchivoCarpeta;
         String linea, nombre, ubicacion, permisos, fechaC, fechaM;
         List<Archivo> archivos = new ArrayList<>();
-        // Se obtiene la información de la carpeta.
+        // Se obtiene la información de la carpeta o archivo.
         bloqueCarpeta = ObtenerBloque(bloqueBuscado);
         lineasBloque = bloqueCarpeta.contenido.split("\n");
         cantidadLineas = lineasBloque.length;
-        int i = 9; // A partir de esta línea, empieza la info de la carpeta.
+        int i = 9; // A partir de esta línea, empieza la info de la carpeta o archivo.
         nombre = lineasBloque[i];
         i += 3;
         ubicacion = lineasBloque[i];
@@ -1289,7 +1306,6 @@ public class SistemaArchivos {
                 usuarios.get(idUsuario), gruposUsuarios.get(idGrupoUsuario), numeroBloque,
                 esCarpeta, archivos);
         
-        //rutaActual = carpeta;
         return carpetaArchivo;
     }
     
@@ -1300,8 +1316,8 @@ public class SistemaArchivos {
     private String generarContenido(){
         cantidadBloques = (tamanioDisco * 1024) / 512;
         tamanioBloque = 512 * 1024;
-        String cBloquesLibres = "1,1";
-        for(int i = 2; i < cantidadBloques; i++){
+        String cBloquesLibres = "1,1,1";
+        for(int i = 3; i < cantidadBloques; i++){
             cBloquesLibres += ",0";
         }
         String bloquesDisco = EstructuraSistemaArchivos.obtenerContenidoInicial(
