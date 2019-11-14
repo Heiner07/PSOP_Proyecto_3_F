@@ -5,7 +5,6 @@
  */
 package proyecto_3;
 
-import java.util.Date;
 import java.util.List;
 
 /**
@@ -80,9 +79,6 @@ public class Archivo {
         this.esCarpeta = esCarpeta;
     }
     
-    /*public void asignarCarpetaContenedor(int carpetaContenedor){
-        this.idbloquePadre = carpetaContenedor;
-    }*/
     public void asignarCarpetaContenedor(Archivo carpetaContenedor){
         this.carpetaContenedora = carpetaContenedor;
     }

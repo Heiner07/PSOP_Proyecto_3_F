@@ -762,11 +762,20 @@ public class SistemaArchivos {
     }
     
     private void comandoLS(String[] elementos){
-        listarContenidoCarpeta(rutaActual, true);
+        int cantidadElementos = elementos.length;
+        if(cantidadElementos > 1){
+            if(elementos[1].equals("-R")){
+                listarContenidoCarpeta(rutaActual, true);
+            }else{
+                System.out.println("Parámetro de comando no válido.");
+            }
+        }else{
+            listarContenidoCarpeta(rutaActual, false);
+        }
     }
     
     private void listarContenidoCarpeta(Archivo carpeta, Boolean recursivo){
-        int indiceFinal, indiceActual, idBloquePadre;
+        int indiceFinal, indiceActual;
         Archivo carpetaActual = carpeta, carpetaTemp, bloquePadre, archivoTemp;
         List<Integer> carpetasRevisadas = new ArrayList<>();
         List<Integer> indiceCarpeta = new ArrayList<>();
@@ -805,7 +814,7 @@ public class SistemaArchivos {
                 }
             }
         }catch(IOException e){
-            
+            System.out.println("Error leyendo el disco.");
         }
     }
     
