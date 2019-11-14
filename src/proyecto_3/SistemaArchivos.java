@@ -569,42 +569,59 @@ public class SistemaArchivos {
     
     
     
+    private boolean obtenerEsCarpeta(Archivo archivo, int id){
+        int largoDocumentos = archivo.contenido.size();
+        for(int i=0;i<largoDocumentos;i++){  
+            int bloqueI = archivo.contenido.get(i).bloqueInicial;
+            if( bloqueI == id){
+                return archivo.contenido.get(i).esCarpeta;               
+            }   
+        }return false;
     
+    }
    
-    private boolean verificarDocumento(Bloque bloque,String nombreDocumento) throws IOException{
+    private boolean verificarDocumento(Bloque bloque,Archivo archivo,String nombreDocumento) throws IOException{
         String[] lineasBloque = bloque.contenido.split("\n");
         int cantidadLineas = lineasBloque.length,idBloqueEliminar=1;
         String linea,contenido = "";
         boolean actualizarArchivo = false;
-        for(int i = 0; i < cantidadLineas; i++){
-            linea = lineasBloque[i];
-            if(linea.equals(EstructuraSistemaArchivos.INICIO_CARPETA) || linea.equals(EstructuraSistemaArchivos.INICIO_ARCHIVO) ){
-                String lineaEstructura = linea;
-                i++; //Para posicionarme en el id de la carpeta o el archivo
+        while(true){
+            for(int i = 0; i < cantidadLineas; i++){
                 linea = lineasBloque[i];
-                //Verificamos que ese id este ocupado
-                int id = Integer.parseInt(linea);
-                if(bloquesLibres.get(id) == 1){
-                        Bloque bloqueVerificar = ObtenerBloque(id);   
-                        String[] lineasBloqueVerificar = bloqueVerificar.contenido.split("\n");
-                        //MODIFICAR LA COMPARACION DEL LARGO, LO COMPARO PARA VERIFICAR QUE ES UN ARCHIVO O CARPETA SIN NADA DENTRO
-                        //DEBO VERIFICAR LOS PERMISOS QUE TIENE
-                        if(bloqueVerificar.nombre.equals(nombreDocumento) && lineasBloqueVerificar.length == 31 && bloqueVerificar.bloqueSiguiente==-1){
-                            //Eliminamos el archivo o carpeta
-                            bloquesLibres.set(id,0);
-                            idBloqueEliminar = id;
-                            actualizarBloquesLibres();
-                            actualizarArchivo = true;
-                            i++;
-                        }else{
-                            contenido += (lineaEstructura + "\n");
-                            contenido += (linea + "\n");
-                        }
+                if(linea.equals(EstructuraSistemaArchivos.INICIO_CARPETA) || linea.equals(EstructuraSistemaArchivos.INICIO_ARCHIVO) ){
+                    String lineaEstructura = linea;
+                    i++; //Para posicionarme en el id de la carpeta o el archivo
+                    linea = lineasBloque[i];
+                    //Verificamos que ese id este ocupado
+                    int id = Integer.parseInt(linea);
+                    if(bloquesLibres.get(id) == 1){
+                            boolean esCarpeta = obtenerEsCarpeta(archivo,id);
+                            Archivo bloqueVerificar = cargarCarpetaArchivo(id,esCarpeta);
+                            //MODIFICAR LA COMPARACION DEL LARGO, LO COMPARO PARA VERIFICAR QUE ES UN ARCHIVO O CARPETA SIN NADA DENTRO
+                            //DEBO VERIFICAR LOS PERMISOS QUE TIENE
+                            if(bloqueVerificar.nombre.equals(nombreDocumento) && bloqueVerificar.contenido.isEmpty() && bloqueVerificar.bloqueS==-1){
+                                //Eliminamos el archivo o carpeta
+                                bloquesLibres.set(id,0);
+                                idBloqueEliminar = id;
+                                actualizarBloquesLibres();
+                                actualizarArchivo = true;
+                                i++;
+                            }else{
+                                contenido += (lineaEstructura + "\n");
+                                contenido += (linea + "\n");
+                            }
+                    }
+                }else{
+                    contenido += (linea + "\n");
+
                 }
-            }else{
-                contenido += (linea + "\n");
-            
             }
+            if(!actualizarArchivo && bloque.bloqueSiguiente != -1){
+               bloque = ObtenerBloque(bloque.bloqueSiguiente);
+               contenido = "";
+               lineasBloque = bloque.contenido.split("\n");
+               cantidadLineas = lineasBloque.length;
+            }else{break;}
         }
         if(actualizarArchivo){
             escribirBloque(bloque.id, contenido);
@@ -641,58 +658,73 @@ public class SistemaArchivos {
     }
     
     
-    private boolean verificarEnBloqueS(Bloque bloque, String cadena) throws IOException{
-        while(true){
-             if(!verificarDocumento(bloque,cadena)){
-                 if(bloque.bloqueSiguiente != -1){
-                    bloque = ObtenerBloque(bloque.bloqueSiguiente);//Accedemos al siguiente bloque a verificar si esta ahi                        
-                 }else{
-                    return false;
-                 }
-             }else{
-                return true;
-             }
+    private boolean VerificarBloquesRm(Archivo archivo, String cadena) throws IOException{      
+        Bloque bloque = ObtenerBloque(archivo.bloqueInicial);
+        if(verificarDocumento(bloque,archivo, cadena)){
+            return true;       
+        }return false;
+        
+       /* for(int i=0;i<largoDocumentos;i++){
+            Bloque bloque = ObtenerBloque(archivo.contenido.get(i).bloqueInicial);
+            if(verificarDocumento(bloque, cadena)){
+                 return true;                    
+            }   
 
-         }
+        }
+        return false;*/
     }
+    
     private void comandoRm(String[] elementos) throws IOException{
         if(elementos.length > 1){
              String cadena = elementos[1];
-             if(!esRuta(cadena)){
-                 Bloque bloque = ObtenerBloque(1);//LA RUTA ACTUAL
-                 if(verificarEnBloqueS(bloque,cadena)){
+             //Verifico que no sea una ruta y que donde estoy ubicado sea una carpeta
+             if(!esRuta(cadena) && !esArchivo(rutaActual.nombre)){
+                 Archivo archivo = cargarCarpetaArchivo(rutaActual.bloqueInicial,true);//LA RUTA ACTUAL
+                 if(VerificarBloquesRm(archivo,cadena)){
                      System.out.println("Se eliminó correctamente "+cadena);
                  
                  }else{System.out.println("Error al eliminar "+cadena);}
                 
              }else{
+                String[] lineasRuta = cadena.split("/");
                 if(cadena.equals("/root")){
                     //ERROR Y SALGO
                 
-                }
-                String[] lineasRuta = cadena.split("/");
-                String rutaInicial = lineasRuta[lineasRuta.length-2];
-                String archivoDirectorio = lineasRuta[lineasRuta.length-1];
-                //if(!esArchivo(lineasRuta[lineasRuta.length-1])){
-              //      cadena+="/";
-               // }
-                 
-                 //Empieza desde 1 porque el bloque 0 es encabezado y 1 es carpeta root
-                 for(int i=1;i<bloquesLibres.size();i++){
-                     int idOcupado = bloquesLibres.get(i);
-                     if(idOcupado == 1){
-                         Bloque bloque = ObtenerBloque(i);
-                         if(bloque.nombre.equals(rutaInicial)){
-                             if(verificarEnBloqueS(bloque,archivoDirectorio)){
-                                 System.out.println("Se eliminó correctamente "+archivoDirectorio);     
-                             }else{System.out.println("Error al eliminar "+archivoDirectorio);}
-                             
-                         
+                }else{
+                    
+                    String rutaInicial = lineasRuta[lineasRuta.length-2];
+                    String archivoDirectorio = lineasRuta[lineasRuta.length-1];
+                    if(!esArchivo(rutaInicial)){
+                        //ERROR
+                    
+                    }else{
+                        for(int i=1;i<bloquesLibres.size();i++){
+                         int idOcupado = bloquesLibres.get(i);
+                         if(idOcupado == 1){
+                             Archivo archivo = cargarCarpetaArchivo(i,true);
+                             if(archivo.nombre.equals(rutaInicial)){
+                                 if(VerificarBloquesRm(archivo,archivoDirectorio)){
+                                    System.out.println("Se eliminó correctamente "+archivoDirectorio);     
+                                 }else{System.out.println("Error al eliminar "+archivoDirectorio);}
+
+
+                             }
+
                          }
-                         
+
                      }
-                 
-                 }
+                    
+                    
+                    
+                    }
+                    
+                    //if(!esArchivo(lineasRuta[lineasRuta.length-1])){
+                  //      cadena+="/";
+                   // }
+
+                     //Empieza desde 1 porque el bloque 0 es encabezado y 1 es carpeta root
+                     
+                }
              
              
              }
@@ -1078,15 +1110,7 @@ public class SistemaArchivos {
                 leyendoBloqueS = false;
                 bloqueS = Integer.parseInt(linea);
             }
-            if(linea.equals(EstructuraSistemaArchivos.INICIO_UBICACION)){     
-                contenidoB += (linea + "\n");
-                linea = archivo.readLine();
-                ubicacion = linea;
-            }else if(linea.equals(EstructuraSistemaArchivos.INICIO_NOMBRE)){     
-                contenidoB += (linea + "\n");
-                linea = archivo.readLine();
-                nombre = linea;
-            }else if(linea.equals(EstructuraSistemaArchivos.INICIO_BLOQUE)){                
+            if(linea.equals(EstructuraSistemaArchivos.INICIO_BLOQUE)){                
                 leyendoBloque = true;
             }else if(linea.equals(EstructuraSistemaArchivos.INICIO_BLOQUE_SIGUIENTE)){
                 leyendoBloqueS = true;
@@ -1099,7 +1123,7 @@ public class SistemaArchivos {
             }
         }
         archivo.close();
-        return new Bloque(numeroBloque, bloqueS, contenidoB,nombre,ubicacion);
+        return new Bloque(numeroBloque, bloqueS, contenidoB);
     }
     
     private int ObtenerBloqueLibre(){
@@ -1276,12 +1300,15 @@ public class SistemaArchivos {
         int cantidadLineas;
         int idUsuario, idGrupoUsuario;
         int idArchivoCarpeta;
+        int bloqueS = 1;
         String linea, nombre, ubicacion, permisos, fechaC, fechaM;
         List<Archivo> archivos = new ArrayList<>();
         // Se obtiene la información de la carpeta.
         bloqueCarpeta = ObtenerBloque(bloqueBuscado);
         lineasBloque = bloqueCarpeta.contenido.split("\n");
         cantidadLineas = lineasBloque.length;
+        bloqueS = bloqueCarpeta.bloqueSiguiente;
+        int bloqueSD= bloqueCarpeta.bloqueSiguiente;
         int i = 9; // A partir de esta línea, empieza la info de la carpeta.
         nombre = lineasBloque[i];
         i += 3;
@@ -1296,30 +1323,42 @@ public class SistemaArchivos {
         idUsuario = Integer.parseInt(lineasBloque[i]);
         i += 3;
         idGrupoUsuario = Integer.parseInt(lineasBloque[i]);
+        
         if(esCarpeta){
-            for(; i < cantidadLineas; i++){
-                linea = lineasBloque[i];
-                if(linea.equals(EstructuraSistemaArchivos.INICIO_CARPETA)){
-                    i++;
-                    idArchivoCarpeta = Integer.parseInt(lineasBloque[i]);
-                    archivos.add(new Archivo(idArchivoCarpeta, true));
-                    //System.out.println("Carpeta, id: "+idArchivoCarpeta);
-                    i++;
-                }else if(linea.equals(EstructuraSistemaArchivos.INICIO_ARCHIVO)){
-                    i++;
-                    idArchivoCarpeta = Integer.parseInt(lineasBloque[i]);
-                    archivos.add(new Archivo(idArchivoCarpeta, false));
-                    //System.out.println("Archivo, id: "+idArchivoCarpeta);
-                    i++;
+            while(true){
+                for(; i < cantidadLineas; i++){
+                    linea = lineasBloque[i];
+                    if(linea.equals(EstructuraSistemaArchivos.INICIO_CARPETA)){
+                        i++;
+                        idArchivoCarpeta = Integer.parseInt(lineasBloque[i]);
+                        archivos.add(new Archivo(idArchivoCarpeta, true));
+                        //System.out.println("Carpeta, id: "+idArchivoCarpeta);
+                        i++;
+                    }else if(linea.equals(EstructuraSistemaArchivos.INICIO_ARCHIVO)){
+                        i++;
+                        idArchivoCarpeta = Integer.parseInt(lineasBloque[i]);
+                        archivos.add(new Archivo(idArchivoCarpeta, false));
+                        //System.out.println("Archivo, id: "+idArchivoCarpeta);
+                        i++;
+                    }
                 }
+                if(bloqueS != -1){
+                    bloqueCarpeta = ObtenerBloque(bloqueS);
+                    lineasBloque = bloqueCarpeta.contenido.split("\n");
+                    cantidadLineas = lineasBloque.length;
+                    i = 0;
+                    bloqueS = bloqueCarpeta.bloqueSiguiente;
+                }else{break;}
+            
             }
+            
         }else{
             
         }
         
         carpetaArchivo = new Archivo(0, 0, nombre, ubicacion, permisos, fechaC, fechaM,
                 usuarios.get(idUsuario), gruposUsuarios.get(idGrupoUsuario), numeroBloque,
-                esCarpeta, archivos);
+                esCarpeta, archivos,bloqueSD);
         
         //rutaActual = carpeta;
         return carpetaArchivo;

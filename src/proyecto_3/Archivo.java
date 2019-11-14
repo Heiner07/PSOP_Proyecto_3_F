@@ -29,6 +29,7 @@ public class Archivo {
     Boolean estaAbierto;
     Archivo carpetaContenedora;
     List<Archivo> contenido;
+    int bloqueS;
 
     /**
      * 
@@ -48,7 +49,7 @@ public class Archivo {
     public Archivo(int id, int tamanio, String nombre, String ubicacion,
             String permisos, String fechaCreacion, String ultimaModificacion,
             Usuario propietario, GrupoUsuarios grupoUsuarios, int bloque,
-            Boolean estaAbierto, List<Archivo> contenido) {
+            Boolean estaAbierto, List<Archivo> contenido,int bloqueS) {
         this.id = id;
         this.tamanio = tamanio;
         this.nombre = nombre;
@@ -61,6 +62,7 @@ public class Archivo {
         this.bloqueInicial = bloque;
         this.estaAbierto = estaAbierto;
         this.contenido = contenido;
+        this.bloqueS = bloqueS;
     }
     
     public Archivo(int id, int tamanio, String nombre, String ubicacion,
