@@ -145,16 +145,14 @@ public class EstructuraSistemaArchivos {
                     + INICIO_ID+"\n"+i+"\n"+FINAL_ID    + "\n"
                     + FINAL_INFORMACION                 + "\n"
                     + FINAL_BLOQUE                      + "\n";
-    
-        
-    
     }
-    public static String generarContenidoCarpeta(Archivo archivo){
+    
+    public static String generarContenidoCarpetaArchivo(Archivo archivo){
         Calendar fecha = Calendar.getInstance();
         String fechaActual = fecha.get(Calendar.DATE)
                 + "/" + fecha.get(Calendar.MONTH)
                 + "/" + fecha.get(Calendar.YEAR);
-        String carpeta
+        String carpetaArchivo
                 // Se define el nombre
                 = INICIO_NOMBRE+"\n"+archivo.nombre+"\n"+FINAL_NOMBRE+"\n"
                 // Se define la ubicación
@@ -169,14 +167,14 @@ public class EstructuraSistemaArchivos {
                 + INICIO_USUARIO+"\n"+archivo.propietario.id+"\n"+FINAL_USUARIO+"\n"
                 // Se establece el grupo de usuario del archivo
                 + INICIO_G_USUARIO+"\n"+archivo.grupoUsuarios.id+"\n"+FINAL_G_USUARIO;
-        return carpeta;
+        return carpetaArchivo;
     }
     
-    public static String generarContenidoReferenciaCarpeta(Archivo archivo){
+    public static String generarContenidoReferenciaCarpetaArchivo(Archivo archivo, Boolean esCarpeta){
         String referencia
-                = INICIO_CARPETA    + "\n"
+                = ((esCarpeta)? INICIO_CARPETA : INICIO_ARCHIVO)    + "\n"
                 + archivo.bloqueInicial        + "\n"
-                + FINAL_CARPETA;
+                + ((esCarpeta)? FINAL_CARPETA : FINAL_ARCHIVO);
         return referencia;
     }
     
