@@ -24,8 +24,10 @@ public class Archivo {
     Usuario propietario;
     GrupoUsuarios grupoUsuarios;
     int bloqueInicial;
+    int idbloquePadre;
     Boolean esCarpeta;
     Boolean estaAbierto;
+    Archivo carpetaContenedora;
     List<Archivo> contenido;
 
     /**
@@ -76,5 +78,12 @@ public class Archivo {
     public Archivo(int bloque, Boolean esCarpeta){
         this.bloqueInicial = bloque;
         this.esCarpeta = esCarpeta;
+    }
+    
+    /*public void asignarCarpetaContenedor(int carpetaContenedor){
+        this.idbloquePadre = carpetaContenedor;
+    }*/
+    public void asignarCarpetaContenedor(Archivo carpetaContenedor){
+        this.carpetaContenedora = carpetaContenedor;
     }
 }
