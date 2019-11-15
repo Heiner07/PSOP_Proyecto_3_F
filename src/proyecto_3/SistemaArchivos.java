@@ -72,7 +72,7 @@ public class SistemaArchivos {
             if (!sistemaCargado) {
                 cargarSistemaArchivos();
             } else {
-                System.out.print(usuarioActual.nombre+"@miFS: ");
+                System.out.print(usuarioActual.nombre+"@miFS:"+rutaActual.ubicacion+"$ ");
                 lineaActual = entradaComandos.nextLine();
                 historialComandos += lineaActual + "\n";
                 if (lineaActual.equals("poweroff")) {
@@ -346,6 +346,20 @@ public class SistemaArchivos {
     }
 
     private void comandoFormat() {
+        // Se reinician los valores
+        usuarios.clear();
+        gruposUsuarios.clear();
+        bloques.clear();
+        bloquesLibres.clear();
+        archivosAbiertos.clear();
+        cantidadArchivosAbiertos = 0;
+        historialComandos = "";
+        lineaActual = "";
+        sistemaCargado = false;
+        yaEntroContrasenia = false;
+        bloqueUbicadoContrasenia = -1;
+        informacionBloqueContrasenia = "";
+        
         String tamanioDiscoTemp;
         do {
             System.out.print("Ingrese el tamaño del disco en MB: ");
@@ -405,18 +419,66 @@ public class SistemaArchivos {
                     usuarioActual = new Usuario(0, nombre, nombreUsuario, contrasenia);
                 }else{
                     Usuario usuarioNuevo = new Usuario(usuarios.size(), nombre, nombreUsuario, contrasenia);
-                    usuarios.add(usuarioNuevo);
-                    if(escribirUsuario(usuarioNuevo)){
-                        System.out.println("¡Usuario agregado!");
-                    }else{
-                        System.out.println("Error al agregar el usuario");
-                    }
+                    crearUsuarioCarpetaGrupo(usuarioNuevo);
                 }
             }else{
                 System.out.println("El nombre de usuario ya existe.");
             }
         }else{
             System.out.println("Especifique un nombre de usuario.");
+        }
+    }
+    
+    private void crearUsuarioCarpetaGrupo(Usuario usuarioNuevo){
+        Archivo rutaActualTemp;
+        try {
+            rutaActualTemp = cargarCarpetaArchivo(3, true);
+            int bloqueLibre = ObtenerBloqueLibre();
+            if(bloqueLibre != -1){
+                if(!elementoRepetidoEnCarpeta(usuarioNuevo.nombre, rutaActualTemp)){
+                    if(!grupoRepetido("Grupo"+usuarioNuevo.nombre)){
+                        List<Integer> idUsuario = new ArrayList<>();
+                        idUsuario.add(usuarioNuevo.id);
+                        GrupoUsuarios grupoNuevo =
+                                new GrupoUsuarios(gruposUsuarios.size(),
+                                        "Grupo"+usuarioNuevo.nombre, idUsuario);
+                        if(escribirGrupoUsuario(grupoNuevo)){
+                            gruposUsuarios.add(grupoNuevo);
+                            Archivo carpetaNueva = new Archivo(0, 0, usuarioNuevo.nombre,
+                                        rutaActualTemp.ubicacion + usuarioNuevo.nombre + "/",
+                                        "PERMISOS", usuarioNuevo,
+                                        grupoNuevo, bloqueLibre);
+                            // Dentro de esta función se actualizan los bloques libres
+                            if(escribirCarpetaArchivo(carpetaNueva, true, rutaActualTemp)){
+                                if(escribirUsuario(usuarioNuevo)){
+                                    usuarios.add(usuarioNuevo);
+                                    System.out.println("¡Usuario agregado!");
+                                    return;
+                                }else{
+                                    System.out.println("Error creando el usuario.");
+                                }return;// Para que no libere el bloque usado por la carpeta.
+                            }else{
+                                System.out.println("Error al crear la carpeta del usuario.");
+                            }
+                        }else{
+                            System.out.println("No se puede crear el usuario porque"
+                                    + " sucedió un error creando el grupo de este usuario.");
+                        }
+                    }else{
+                        System.out.println("No se puede crear el usuario porque hay"
+                                + " un grupo con el mismo nombre del usuario.");
+                    }
+                }else{
+                    System.out.println("Error, no se puede crear el usuario porque"
+                            + " hay una carpeta creada con el mismo nombre de usuario"
+                            + " en la carpeta /root/users/.");
+                }bloquesLibres.set(bloqueLibre, 0);// Libera el bloque usado por la carpeta (si hay error)
+            }else{
+                System.out.println("Error, no hay espacio para la carpeta de usuario.");
+            }
+        } catch (IOException ex) {
+            //Logger.getLogger(SistemaArchivos.class.getName()).log(Level.SEVERE, null, ex);
+            System.out.println("Error leyendo el disco");
         }
     }
     
@@ -431,8 +493,8 @@ public class SistemaArchivos {
             nombreGrupo = elementos[1];
             if(!grupoRepetido(nombreGrupo)){
                 GrupoUsuarios grupoNuevo = new GrupoUsuarios(gruposUsuarios.size(),nombreGrupo, null);
-                gruposUsuarios.add(grupoNuevo);
                 if(escribirGrupoUsuario(grupoNuevo)){
+                    gruposUsuarios.add(grupoNuevo);
                     System.out.println("¡Grupo agregado!");
                 }else{
                     System.out.println("Error al agregar el grupo");
@@ -685,14 +747,14 @@ public class SistemaArchivos {
             Archivo carpetaNueva;
             for(int i = 1; i < cantidadElementos; i++){
                 nombreCarpeta = elementos[i];
-                if(!elementoRepetidoEnCarpeta(nombreCarpeta)){
+                if(!elementoRepetidoEnCarpeta(nombreCarpeta, null)){
                     bloqueLibre = ObtenerBloqueLibre();
                     if(bloqueLibre != -1){
                         carpetaNueva = new Archivo(0, 0, nombreCarpeta,
                                 rutaActual.ubicacion + nombreCarpeta + "/",
                                 "PERMISOS", rutaActual.propietario,
                                 rutaActual.grupoUsuarios, bloqueLibre);
-                        if(escribirCarpetaArchivo(carpetaNueva, true)){
+                        if(escribirCarpetaArchivo(carpetaNueva, true, null)){
                             System.out.println("¡Carpeta creada!");
                         }else{
                             System.out.println("Error al crear la carpeta.");
@@ -707,8 +769,17 @@ public class SistemaArchivos {
         }
     }
     
-    private Boolean elementoRepetidoEnCarpeta(String nombre){
-        List<Archivo> elementos = rutaActual.contenido;
+    /**
+     * Busca si existe un elemento en la carpeta con el nombre indicado.
+     * Si la variable carpetaUsuarios es nulo, es en la carpeta actual, sino,
+     * es la carpeta de usuarios (agregando un usuario)
+     * @param nombre
+     * @param carpetaUsuarios
+     * @return 
+     */
+    private Boolean elementoRepetidoEnCarpeta(String nombre, Archivo carpetaUsuarios){
+        List<Archivo> elementos = (carpetaUsuarios == null)? rutaActual.contenido
+                : carpetaUsuarios.contenido;
         int cantidadElementos = elementos.size();
         Archivo elemento;
         try{
@@ -760,7 +831,6 @@ public class SistemaArchivos {
                     if(carpeta.nombre.equals(nombre)){
                         carpeta.asignarCarpetaContenedor(rutaActual);
                         rutaActual = carpeta;
-                        System.out.println("Dentro de la carpeta "+nombre);
                         return;
                     }
                 }
@@ -779,14 +849,14 @@ public class SistemaArchivos {
             Archivo archivoNuevo;
             for(int i = 1; i < cantidadElementos; i++){
                 nombreArchivo = elementos[i];
-                if(!elementoRepetidoEnCarpeta(nombreArchivo)){
+                if(!elementoRepetidoEnCarpeta(nombreArchivo, null)){
                     bloqueLibre = ObtenerBloqueLibre();
                     if(bloqueLibre != -1){
                         archivoNuevo = new Archivo(0, 0, nombreArchivo,
                                 rutaActual.ubicacion + nombreArchivo,
                                 "PERMISOS", rutaActual.propietario,
                                 rutaActual.grupoUsuarios, bloqueLibre);
-                        if(escribirCarpetaArchivo(archivoNuevo, false)){
+                        if(escribirCarpetaArchivo(archivoNuevo, false, null)){
                             System.out.println("¡Archivo creado!");
                         }else{
                             System.out.println("Error al crear el archivo.");
@@ -858,14 +928,25 @@ public class SistemaArchivos {
         }
     }
     
-    private Boolean escribirCarpetaArchivo(Archivo carpetaArchivoNuevo, Boolean esCarpeta){
+    /**
+     * Escribe una carpeta o archivo en el disco.
+     * Si la variable carpetaUsuarios es nulo, es en la carpeta actual, sino,
+     * es la carpeta de usuarios (agregando un usuario).
+     * @param carpetaArchivoNuevo
+     * @param esCarpeta
+     * @param carpetaUsuarios
+     * @return 
+     */
+    private Boolean escribirCarpetaArchivo(Archivo carpetaArchivoNuevo,
+            Boolean esCarpeta, Archivo carpetaUsuarios){
         String contenidoCarpeta = EstructuraSistemaArchivos.generarContenidoCarpetaArchivo(carpetaArchivoNuevo);
         Bloque bloqueDestino, bloqueActual;
         String bloqueCarpeta, referenciaCarpeta;
         String contenidoReferencia =
                 EstructuraSistemaArchivos.generarContenidoReferenciaCarpetaArchivo(carpetaArchivoNuevo, esCarpeta);
         Boolean hayEspacio = false;
-        int idBloqueBuscado = rutaActual.bloqueInicial; // EL bloque con la carpeta actual
+        int idBloqueBuscado = (carpetaUsuarios == null)? rutaActual.bloqueInicial // EL bloque con la carpeta actual
+                : carpetaUsuarios.bloqueInicial;
         try{
             while(true){
                 // Ciclo utilizado para buscar un bloque nuevo, si la referencia no cabe en el actual.
@@ -895,7 +976,12 @@ public class SistemaArchivos {
                 escribirBloque(bloqueDestino.id, bloqueCarpeta);// Se escribe el bloque con la carpeta.
                 
                 // Se recarga la carpeta actual para obtener la refencia nueva.
-                rutaActual = cargarCarpetaArchivo(rutaActual.bloqueInicial, true);
+                if(carpetaUsuarios == null ||
+                        carpetaUsuarios.bloqueInicial == rutaActual.bloqueInicial){
+                    String carpetaActual = rutaActual.nombre;
+                    comandoCD(new String[]{ "", ".."});
+                    comandoCD(new String[]{ "", carpetaActual});
+                }
                     
                 return true;
             }else{
@@ -1338,8 +1424,8 @@ public class SistemaArchivos {
     private String generarContenido(){
         cantidadBloques = (tamanioDisco * 1024) / 512;
         tamanioBloque = 512 * 1024;
-        String cBloquesLibres = "1,1,1";
-        for(int i = 3; i < cantidadBloques; i++){
+        String cBloquesLibres = "1,1,1,1";
+        for(int i = 4; i < cantidadBloques; i++){
             cBloquesLibres += ",0";
         }
         String bloquesDisco = EstructuraSistemaArchivos.obtenerContenidoInicial(

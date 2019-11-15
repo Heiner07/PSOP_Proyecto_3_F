@@ -131,6 +131,9 @@ public class EstructuraSistemaArchivos {
                 + INICIO_CARPETA    + "\n"
                 + "2\n"
                 + FINAL_CARPETA     + "\n"
+                + INICIO_CARPETA    + "\n"
+                + "3\n"
+                + FINAL_CARPETA     + "\n"
                 + FINAL_INFORMACION                 + "\n"
                 + FINAL_BLOQUE                      + "\n";
         // Se crea el bloque con la carpeta root
@@ -148,8 +151,23 @@ public class EstructuraSistemaArchivos {
                 + INICIO_G_USUARIO+"\n"+0+"\n"+FINAL_G_USUARIO+"\n"
                 + FINAL_INFORMACION                 + "\n"
                 + FINAL_BLOQUE                      + "\n";
+        // Se crea el bloque con la carpeta users
+        bloquesDisco
+                += INICIO_BLOQUE                    + "\n"
+                + INICIO_BLOQUE_SIGUIENTE+"\n-1\n"+FINAL_BLOQUE_SIGUIENTE+"\n"
+                + INICIO_INFORMACION                + "\n"
+                + INICIO_ID+"\n"+3+"\n"+FINAL_ID    + "\n"
+                + INICIO_NOMBRE+"\nusers\n"+FINAL_NOMBRE+"\n"
+                + INICIO_UBICACION+"\n/users/\n"+FINAL_UBICACION+"\n"
+                + INICIO_PERMISOS+"\nPERMISOS\n"+FINAL_PERMISOS+"\n"
+                + INICIO_FECHA_C+"\n"+fechaActual+"\n"+FINAL_FECHA_C+"\n"
+                + INICIO_FECHA_M+"\n"+fechaActual+"\n"+FINAL_FECHA_M+"\n"
+                + INICIO_USUARIO+"\n"+0+"\n"+FINAL_USUARIO+"\n"
+                + INICIO_G_USUARIO+"\n"+0+"\n"+FINAL_G_USUARIO+"\n"
+                + FINAL_INFORMACION                 + "\n"
+                + FINAL_BLOQUE                      + "\n";
         // Se crean el resto de bloques (libres)
-        for(int i = 3; i < cantidadBloques; i++){
+        for(int i = 4; i < cantidadBloques; i++){
             bloquesDisco += generarBloqueLibre(i);
         }
         return bloquesDisco;
