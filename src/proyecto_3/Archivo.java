@@ -5,7 +5,6 @@
  */
 package proyecto_3;
 
-import java.util.Date;
 import java.util.List;
 
 /**
@@ -62,6 +61,7 @@ public class Archivo {
         this.bloqueInicial = bloque;
         this.estaAbierto = estaAbierto;
         this.contenido = contenido;
+        this.carpetaContenedora = null;
         this.bloqueS = bloqueS;
     }
     
@@ -75,6 +75,7 @@ public class Archivo {
         this.propietario = propietario;
         this.grupoUsuarios = grupoUsuarios;
         this.bloqueInicial = bloque;
+        this.carpetaContenedora = null;
     }
     
     public Archivo(int bloque, Boolean esCarpeta){
@@ -82,9 +83,6 @@ public class Archivo {
         this.esCarpeta = esCarpeta;
     }
     
-    /*public void asignarCarpetaContenedor(int carpetaContenedor){
-        this.idbloquePadre = carpetaContenedor;
-    }*/
     public void asignarCarpetaContenedor(Archivo carpetaContenedor){
         this.carpetaContenedora = carpetaContenedor;
     }
