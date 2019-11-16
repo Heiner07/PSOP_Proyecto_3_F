@@ -319,6 +319,7 @@ public class SistemaArchivos {
                 // llamado al método
                 break;
             case "chgrp":
+                comandoChgrp(elementos);
                 // llamado al método
                 break;
             case "chmod":
@@ -964,7 +965,24 @@ public class SistemaArchivos {
         }
         return cadenaFinal;
     }
-    private boolean cambiarPropietarioArchivo(String nombreDocumento,int idUsuarioNuevo) throws IOException{
+   
+   private String sustituirIdGrupoCadena(String contenidoBloque, int id){
+        String cadenaFinal = "", linea;
+        String[] lineas = contenidoBloque.split("\n");
+        int cantidadLineas = lineas.length;
+        for(int i = 0; i < cantidadLineas; i++){
+            linea = lineas[i];
+            if(linea.equals(EstructuraSistemaArchivos.INICIO_G_USUARIO)){
+                cadenaFinal += (linea + "\n");
+                cadenaFinal += (id + "\n");  
+                i++; //Para posicionarme en el id de la carpeta o el archivo
+            }else{
+                cadenaFinal += (linea + "\n");
+            }
+        }
+        return cadenaFinal;
+    }
+    private boolean cambiarPropietarioGrupoArchivo(String nombreDocumento,int idNuevo,boolean esUsario) throws IOException{
         String contenido = "";
         boolean actualizarArchivo = false;
         Bloque bloque = null;
@@ -974,7 +992,12 @@ public class SistemaArchivos {
             if(archivoAnalizar.nombre.equals(nombreDocumento)){
                 actualizarArchivo = true;
                 bloque = ObtenerBloque(archivoAnalizar.bloqueInicial);
-                contenido = sustituirIdUsuarioCadena(bloque.contenido,idUsuarioNuevo);
+                if(esUsario){
+                    contenido = sustituirIdUsuarioCadena(bloque.contenido,idNuevo);
+                }else{
+                    contenido = sustituirIdGrupoCadena(bloque.contenido,idNuevo);
+                }
+                
                 break;
             }
         }
@@ -986,7 +1009,7 @@ public class SistemaArchivos {
             return false;
         }
     }
-    private boolean cambiarPropietarioRecursivo(String nombreDocumento,int idUsuarioNuevo){
+    private boolean cambiarPropietarioGrupoRecursivo(String nombreDocumento,int idUsuarioNuevo,boolean esUsuario){
         int indiceFinal, indiceActual;
         Archivo carpetaActual = null, bloquePadre;
         List<Integer> carpetasRevisadas = new ArrayList<>();
@@ -1018,7 +1041,10 @@ public class SistemaArchivos {
                     indiceCarpeta.remove(indiceFinal);
                     carpetasRevisadas.add(carpetaActual.bloqueInicial);
                     Bloque bloque = ObtenerBloque(carpetaActual.bloqueInicial);
-                    escribirBloque(bloque.id, sustituirIdUsuarioCadena(bloque.contenido,idUsuarioNuevo));
+                    if(esUsuario){
+                        escribirBloque(bloque.id, sustituirIdUsuarioCadena(bloque.contenido,idUsuarioNuevo));
+                    }else{escribirBloque(bloque.id, sustituirIdGrupoCadena(bloque.contenido,idUsuarioNuevo));}
+                    
                     carpetaActual = carpetaActual.carpetaContenedora;
                 }else if(carpetaActual.contenido.get(indiceActual).esCarpeta){
                         bloquePadre = carpetaActual;
@@ -1028,7 +1054,9 @@ public class SistemaArchivos {
                 }else{
                     //archivoTemp = cargarCarpetaArchivo(carpetaActual.contenido.get(indiceActual).bloqueInicial, false,carpetaActual.ubicacion);
                     Bloque bloque = ObtenerBloque(carpetaActual.contenido.get(indiceActual).bloqueInicial);
-                    escribirBloque(bloque.id, sustituirIdUsuarioCadena(bloque.contenido,idUsuarioNuevo));
+                    if(esUsuario){
+                        escribirBloque(bloque.id, sustituirIdUsuarioCadena(bloque.contenido,idUsuarioNuevo));
+                    }else{escribirBloque(bloque.id, sustituirIdGrupoCadena(bloque.contenido,idUsuarioNuevo));}
                 }
             }   
         }catch(IOException e){
@@ -1050,7 +1078,7 @@ public class SistemaArchivos {
                 int idUsuario = obtenerIdUsuario(nombreUsuario);
                 if( idUsuario!=-1 && !esRuta(elementos[2])){
                     try {
-                        if(cambiarPropietarioArchivo(elementos[2],idUsuario)){
+                        if(cambiarPropietarioGrupoArchivo(elementos[2],idUsuario,true)){
                             System.out.println("Se cambió el propietario con éxito");
                         }else System.out.println("No se pudo cambiar el propietario");
                     } catch (IOException ex) {
@@ -1059,25 +1087,65 @@ public class SistemaArchivos {
                 }else System.out.println("Usuario no existe o documento es ruta");
             
             }else{
-                if(elementos[1].equals("-R")){
+                if(elementos[1].equals("-R") || elementos[1].equals("-r")){
                     String nombreUsuario = elementos[2];
                     int idUsuario = obtenerIdUsuario(nombreUsuario);
                     if(idUsuario!=-1 && !esRuta(elementos[3])){
-                        if(cambiarPropietarioRecursivo(elementos[3],idUsuario)){
+                        if(cambiarPropietarioGrupoRecursivo(elementos[3],idUsuario,true)){
                             System.out.println("Se cambió el propietario con éxito");
                         }else System.out.println("No se pudo cambiar el propietario");
 
                     }else System.out.println("Usuario no existe o documento es ruta");
                 
                 }else{
-                    System.out.println("Eror de comando");
+                    System.out.println("Error de comando");
                 
                 
                 }
             }
+        }
+    
+    }
+    
+    private int obtenerIdGrupo(String nombreGrupo){
+        for(GrupoUsuarios gu:gruposUsuarios){
+            if(gu.nombre.equals(nombreGrupo))return gu.id;
+        }
+        return -1;
+    
+    }
+    private void comandoChgrp(String[] elementos){
+        if(elementos.length > 1 && elementos.length < 5){
+            if(elementos.length == 3){
+                String nombreGrupo = elementos[1];
+                int idGrupo = obtenerIdGrupo(nombreGrupo);
+                if( idGrupo!=-1 && !esRuta(elementos[2])){
+                    try {
+                        if(cambiarPropietarioGrupoArchivo(elementos[2],idGrupo,false)){
+                            System.out.println("Se cambió el grupo con éxito");
+                        }else System.out.println("No se pudo cambiar el grupo");
+                    } catch (IOException ex) {
+                        System.out.println("ERROR");
+                    }
+                }else System.out.println("Grupo no existe o documento es ruta");
             
-        
-        
+            }else{
+                if(elementos[1].equals("-R") || elementos[1].equals("-r")){
+                    String nombreGrupo = elementos[2];
+                    int id = obtenerIdGrupo(nombreGrupo);
+                    if(id!=-1 && !esRuta(elementos[3])){
+                        if(cambiarPropietarioGrupoRecursivo(elementos[3],id,false)){
+                            System.out.println("Se cambió el grupo con éxito");
+                        }else System.out.println("No se pudo cambiar el grupo");
+
+                    }else System.out.println("Grupo no existe o documento es ruta");
+                
+                }else{
+                    System.out.println("Error de comando");
+                
+                
+                }
+            }
         }
     
     }
