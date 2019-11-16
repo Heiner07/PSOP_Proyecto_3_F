@@ -315,6 +315,7 @@ public class SistemaArchivos {
                 // llamado al método
                 break;
             case "chown":
+                comandoChown(elementos);
                 // llamado al método
                 break;
             case "chgrp":
@@ -659,20 +660,19 @@ public class SistemaArchivos {
                     //Verificamos que ese id este ocupado
                     int id = Integer.parseInt(linea);
                     if(bloquesLibres.get(id) == 1){
-                            Archivo bloqueVerificar = cargarCarpetaArchivo(id,obtenerEsCarpeta(archivo,id),null);
+                            Archivo bloqueVerificar = cargarCarpetaArchivo(id,obtenerEsCarpeta(archivo,id),archivo.ubicacion);
                             if(bloqueVerificar.nombre.equals(nombreDocumento) && bloqueVerificar.contenido.isEmpty() && bloqueVerificar.bloqueS==-1){
                             //Verifico que el archivo no este abierto y que tenga los permisos de usuario o grupo para eliminar
                                 if(PermisosEliminar(bloqueVerificar)){
                                     //Eliminamos el archivo o carpeta
                                     //Lo volvemos a la raíz
                                     if(bloqueVerificar.ubicacion.equals((rutaActual.ubicacion+"/")) || bloqueVerificar.ubicacion.equals(rutaActual.ubicacion))
-                                            rutaActual = cargarCarpetaArchivo(1, true,null); 
-                                     
-                                    bloquesLibres.set(id,0);
-                                    idBloqueEliminar = id;
-                                    actualizarBloquesLibres();
-                                    actualizarArchivo = true;
-                                    i++;
+                                        rutaActual = cargarCarpetaArchivo(1, true,null); 
+                                        bloquesLibres.set(id,0);
+                                        idBloqueEliminar = id;
+                                        actualizarBloquesLibres();
+                                        actualizarArchivo = true;
+                                        i++;
                                 }
                             }else{
                                 contenido += (lineaEstructura + "\n");
@@ -740,11 +740,11 @@ public class SistemaArchivos {
                     carpetaActual = carpetaActual.carpetaContenedora;
                 }else if(carpetaActual.contenido.get(indiceActual).esCarpeta){
                         bloquePadre = carpetaActual;
-                        carpetaActual = cargarCarpetaArchivo(carpetaActual.contenido.get(indiceActual).bloqueInicial, true,null);
+                        carpetaActual = cargarCarpetaArchivo(carpetaActual.contenido.get(indiceActual).bloqueInicial, true,bloquePadre.ubicacion);
                         indiceCarpeta.add(0);
                         carpetaActual.asignarCarpetaContenedor(bloquePadre);
                 }else{
-                    archivoTemp = cargarCarpetaArchivo(carpetaActual.contenido.get(indiceActual).bloqueInicial, false,null);
+                    archivoTemp = cargarCarpetaArchivo(carpetaActual.contenido.get(indiceActual).bloqueInicial, false,carpetaActual.ubicacion);
                     Bloque bloque = ObtenerBloque(carpetaActual.bloqueInicial);
                     estadosArchivos.add(verificarDocumento(bloque,carpetaActual,archivoTemp.nombre));
                 }
@@ -789,14 +789,36 @@ public class SistemaArchivos {
         }
     
     }
+    private String obtenerArchivoPadre(int id){
+        String ubicacion = "/";
+        try{
+            for(int i=2;i<bloquesLibres.size();i++){
+                int idOcupado = bloquesLibres.get(i);
+                if(idOcupado == 1){
+                    List<Archivo> contenidoAnalizar = cargarCarpetaArchivo(i,true,null).contenido;
+                    for(Archivo ar:contenidoAnalizar){
+                        if(ar.bloqueInicial==id){
+                            ubicacion += cargarCarpetaArchivo(i,true,null).ubicacion;
+                            return ubicacion;
+                        }
+                    }
+                }
+            }
+            return ubicacion;
+        }catch(Exception e){
+            System.out.println("ERROR");
+        
+        }
+        return ubicacion;
     
+    }
     private List<Archivo> obtenerArchivoPorCadena(String ruta) throws IOException{
         List<Archivo> archivos = new ArrayList<>();
         try{
             for(int i=2;i<bloquesLibres.size();i++){
                 int idOcupado = bloquesLibres.get(i);
                 if(idOcupado == 1){
-                    Archivo archivo = cargarCarpetaArchivo(i,true,null);
+                    Archivo archivo = cargarCarpetaArchivo(i,true,obtenerArchivoPadre(i));
                     if(archivo.nombre.equals(ruta)){
                         archivos.add(archivo);
                     }
@@ -824,9 +846,8 @@ public class SistemaArchivos {
                 int largoContenido = archivo.contenido.size();
                 int k = 0;
                 while(k<largoContenido){
-                    Archivo archivoAnalizar = cargarCarpetaArchivo(archivo.contenido.get(k).bloqueInicial, archivo.contenido.get(k).esCarpeta,null);
+                    Archivo archivoAnalizar = cargarCarpetaArchivo(archivo.contenido.get(k).bloqueInicial, archivo.contenido.get(k).esCarpeta,archivo.ubicacion);
                     if(archivoAnalizar.nombre.equals(rutas[indice])){
-                        indice++;
                         if(indice>=largoRuta){
                             archivosRetornar.add(archivo);
                             archivosRetornar.add(archivoAnalizar);
@@ -836,6 +857,7 @@ public class SistemaArchivos {
                             largoContenido = archivo.contenido.size();
                             k = 0;
                         } 
+                        indice++;
                     }else k++;
                 }
             }
@@ -922,6 +944,17 @@ public class SistemaArchivos {
                 
             }
         }
+    }
+    
+    
+    
+    private void comandoChown(String[] elementos){
+        if(elementos.length > 1 && elementos.length < 4){
+        
+        
+        
+        }
+    
     }
     private void comandoWhoAmI(){
         System.out.println("username: "+usuarioActual.nombre);
