@@ -946,10 +946,136 @@ public class SistemaArchivos {
     }
     
     
+   private String sustituirIdUsuarioCadena(String contenidoBloque, int IdUsuario){
+        String cadenaFinal = "", linea;
+        String[] lineas = contenidoBloque.split("\n");
+        int cantidadLineas = lineas.length;
+        boolean enUsuario = true;
+        for(int i = 0; i < cantidadLineas; i++){
+            linea = lineas[i];
+            if(linea.equals(EstructuraSistemaArchivos.INICIO_USUARIO) && enUsuario){
+                enUsuario = false;
+                cadenaFinal += (linea + "\n");
+                cadenaFinal += (IdUsuario + "\n");  
+                i++; //Para posicionarme en el id de la carpeta o el archivo
+            }else{
+                cadenaFinal += (linea + "\n");
+            }
+        }
+        return cadenaFinal;
+    }
+    private boolean cambiarPropietarioArchivo(String nombreDocumento,int idUsuarioNuevo) throws IOException{
+        String contenido = "";
+        boolean actualizarArchivo = false;
+        Bloque bloque = null;
+        List<Archivo> archivos = rutaActual.contenido;
+        for(Archivo carpetaArchivo: archivos){
+            Archivo archivoAnalizar = cargarCarpetaArchivo(carpetaArchivo.bloqueInicial,carpetaArchivo.esCarpeta,rutaActual.ubicacion);
+            if(archivoAnalizar.nombre.equals(nombreDocumento)){
+                actualizarArchivo = true;
+                bloque = ObtenerBloque(archivoAnalizar.bloqueInicial);
+                contenido = sustituirIdUsuarioCadena(bloque.contenido,idUsuarioNuevo);
+                break;
+            }
+        }
+        if(actualizarArchivo){
+            escribirBloque(bloque.id, contenido);
+            return true;  
+        }
+        else{
+            return false;
+        }
+    }
+    private boolean cambiarPropietarioRecursivo(String nombreDocumento,int idUsuarioNuevo){
+        int indiceFinal, indiceActual;
+        Archivo carpetaActual = null, bloquePadre;
+        List<Integer> carpetasRevisadas = new ArrayList<>();
+        List<Integer> indiceCarpeta = new ArrayList<>();
+        indiceCarpeta.add(0);
+        List<Archivo> archivos = rutaActual.contenido;
+        try {
+            for(Archivo carpetaArchivo: archivos){
+                Archivo archivoAnalizar;
+                archivoAnalizar = cargarCarpetaArchivo(carpetaArchivo.bloqueInicial,carpetaArchivo.esCarpeta,rutaActual.ubicacion);
+                if(archivoAnalizar.nombre.equals(nombreDocumento)){
+                    carpetaActual = archivoAnalizar;
+                    carpetaActual.carpetaContenedora = carpetaActual;
+                    break;
+                }
+
+
+            }
+        } catch (IOException ex) {
+                carpetaActual = rutaActual;
+        }
+        if(carpetaActual==null)return false;
+        try{
+            while(!carpetasRevisadas.contains(carpetaActual.bloqueInicial)){
+                indiceFinal = indiceCarpeta.size()-1;
+                indiceActual = indiceCarpeta.get(indiceFinal);
+                indiceCarpeta.set(indiceFinal, indiceActual+1);
+                if(indiceActual == carpetaActual.contenido.size()){
+                    indiceCarpeta.remove(indiceFinal);
+                    carpetasRevisadas.add(carpetaActual.bloqueInicial);
+                    Bloque bloque = ObtenerBloque(carpetaActual.bloqueInicial);
+                    escribirBloque(bloque.id, sustituirIdUsuarioCadena(bloque.contenido,idUsuarioNuevo));
+                    carpetaActual = carpetaActual.carpetaContenedora;
+                }else if(carpetaActual.contenido.get(indiceActual).esCarpeta){
+                        bloquePadre = carpetaActual;
+                        carpetaActual = cargarCarpetaArchivo(carpetaActual.contenido.get(indiceActual).bloqueInicial, true,bloquePadre.ubicacion);
+                        indiceCarpeta.add(0);
+                        carpetaActual.asignarCarpetaContenedor(bloquePadre);
+                }else{
+                    //archivoTemp = cargarCarpetaArchivo(carpetaActual.contenido.get(indiceActual).bloqueInicial, false,carpetaActual.ubicacion);
+                    Bloque bloque = ObtenerBloque(carpetaActual.contenido.get(indiceActual).bloqueInicial);
+                    escribirBloque(bloque.id, sustituirIdUsuarioCadena(bloque.contenido,idUsuarioNuevo));
+                }
+            }   
+        }catch(IOException e){
+            System.out.println("Error leyendo el disco.");
+        }
+        return true;
+    }
+    private int obtenerIdUsuario(String nombreUsuario){
+        for(Usuario us:usuarios){
+            if(us.nombre.equals(nombreUsuario))return us.id;
+        }
+        return -1;
     
+    }
     private void comandoChown(String[] elementos){
-        if(elementos.length > 1 && elementos.length < 4){
-        
+        if(elementos.length > 1 && elementos.length < 5){
+            if(elementos.length == 3){
+                String nombreUsuario = elementos[1];
+                int idUsuario = obtenerIdUsuario(nombreUsuario);
+                if( idUsuario!=-1 && !esRuta(elementos[2])){
+                    try {
+                        if(cambiarPropietarioArchivo(elementos[2],idUsuario)){
+                            System.out.println("Se cambió el propietario con éxito");
+                        }else System.out.println("No se pudo cambiar el propietario");
+                    } catch (IOException ex) {
+                        System.out.println("ERROR");
+                    }
+                }else System.out.println("Usuario no existe o documento es ruta");
+            
+            }else{
+                if(elementos[1].equals("-R")){
+                    String nombreUsuario = elementos[2];
+                    int idUsuario = obtenerIdUsuario(nombreUsuario);
+                    if(idUsuario!=-1 && !esRuta(elementos[3])){
+                        if(cambiarPropietarioRecursivo(elementos[3],idUsuario)){
+                            System.out.println("Se cambió el propietario con éxito");
+                        }else System.out.println("No se pudo cambiar el propietario");
+
+                    }else System.out.println("Usuario no existe o documento es ruta");
+                
+                }else{
+                    System.out.println("Eror de comando");
+                
+                
+                }
+            }
+            
         
         
         }
