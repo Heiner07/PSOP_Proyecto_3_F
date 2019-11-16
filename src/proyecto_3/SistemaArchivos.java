@@ -12,6 +12,7 @@ import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -710,24 +711,7 @@ public class SistemaArchivos {
         }
         rutaActual.contenido = archivos;
     }
-    private boolean esRuta(String cadena){   
-        for(char c : cadena.toCharArray()){
-            if('/' == c){
-                return true;
-            } 
-        }
-        return false; 
-    }
     
-    private boolean esArchivo(String cadena){
-        for(char c : cadena.toCharArray()){
-            if('.' == c){
-                return true;
-            } 
-        }
-        return false; 
-    
-    }
     
     
     private boolean VerificarBloquesRm(Archivo archivo, String cadena) throws IOException{      
@@ -795,7 +779,7 @@ public class SistemaArchivos {
     
     
     private void verificarEliminadosEnRuta(List<Boolean> archivosEliminados){
-        if(archivosEliminados.get(archivosEliminados.size()-1))System.out.println("Eliminado con éxito");
+        if(archivosEliminados.get(archivosEliminados.size()-1))System.out.println("Se eliminó correctamente");
         else 
         for(Boolean archivoEliminado:archivosEliminados){
             if(archivoEliminado){
@@ -826,9 +810,10 @@ public class SistemaArchivos {
         return archivos;
     
     }
-    private boolean encontrarRuta(String[] rutas){
+    private List<Archivo> encontrarRuta(String[] rutas){
         int largoRuta = rutas.length-1;
         List<Archivo> archivos;
+        List<Archivo> archivosRetornar = new ArrayList<>();
         int indice = 1;
         try {
             archivos = obtenerArchivoPorCadena(rutas[indice]);
@@ -841,11 +826,12 @@ public class SistemaArchivos {
                 while(k<largoContenido){
                     Archivo archivoAnalizar = cargarCarpetaArchivo(archivo.contenido.get(k).bloqueInicial, archivo.contenido.get(k).esCarpeta);
                     if(archivoAnalizar.nombre.equals(rutas[indice])){
+                        indice++;
                         if(indice>=largoRuta){
-                            return true;
+                            archivosRetornar.add(archivo);
+                            archivosRetornar.add(archivoAnalizar);
+                            return archivosRetornar;
                         }else{
-                            
-                            indice++;
                             archivo = archivoAnalizar;
                             largoContenido = archivo.contenido.size();
                             k = 0;
@@ -856,39 +842,53 @@ public class SistemaArchivos {
         } catch (IOException ex) {
                 System.out.println("ERROR");
         }
-        return false;
+        return archivosRetornar;
     
     }
-    private void eliminarEnRuta(String rutaInicial, String archivoDirectorio,boolean recursivo) throws IOException{      
-        //debemos verificar que la ruta exista, si es recursivo que el archivoDirectorio sea una carpeta//////////////////////////////////////////////////////
-        Archivo archivoPadre = null;
+    private void eliminarEnRuta(List<Archivo> archivos,boolean recursivo) throws IOException{      
+       
         boolean rutaNoEncontrada = true,tienePadre=false;
-        for(int i=2;i<bloquesLibres.size();i++){
-            int idOcupado = bloquesLibres.get(i);
-            if(idOcupado == 1){
-                Archivo archivo = cargarCarpetaArchivo(i,true);
-                if(recursivo){
-                    if(archivo.nombre.equals(rutaInicial) && !tienePadre){
-                        archivoPadre = archivo;
-                        tienePadre = true;
-                    }else if(archivo.nombre.equals(archivoDirectorio)){
-                        archivo.carpetaContenedora = archivoPadre;
-                        rutaNoEncontrada = false;
-                        verificarEliminadosEnRuta(eliminarEnRutaAux(archivo));
-                    }
-                }else if(archivo.nombre.equals(rutaInicial)){
-                        rutaNoEncontrada = false;
-                        if(VerificarBloquesRm(archivo,archivoDirectorio)){
-                            System.out.println("Se eliminó correctamente "+archivoDirectorio);     
-                        }else{System.out.println("Error al eliminar "+archivoDirectorio);}
-                    } 
+        try{
+            int largoArchivos = archivos.size();
+            Archivo archivoDirectorio = archivos.get(largoArchivos-1);
+            Archivo archivoPadre = archivos.get(largoArchivos-2);
+            if(recursivo){
+                rutaNoEncontrada = false;
+                archivoDirectorio.carpetaContenedora = archivoPadre;
+                verificarEliminadosEnRuta(eliminarEnRutaAux(archivoDirectorio));
+            }else{
+                rutaNoEncontrada = false;
+                if(VerificarBloquesRm(archivoPadre,archivoDirectorio.nombre)){
+                    System.out.println("Se eliminó correctamente "+archivoDirectorio.nombre);     
+                }else{System.out.println("Error al eliminar "+archivoDirectorio.nombre);}
+            
             }
+            if(rutaNoEncontrada){System.out.println("Error al eliminar");}
+        }catch(Exception e){
+            System.out.println("ERROR");
         }
-        if(rutaNoEncontrada){System.out.println("Error al eliminar");}
+        
+    }
+    private boolean esRuta(String cadena){   
+        for(char c : cadena.toCharArray()){
+            if('/' == c){
+                return true;
+            } 
+        }
+        return false; 
     }
     
+    private boolean esArchivo(String cadena){
+        for(char c : cadena.toCharArray()){
+            if('.' == c){
+                return true;
+            } 
+        }
+        return false; 
+    
+    }
     private void comandoRm(String[] elementos) throws IOException {
-        if(elementos.length > 1){
+        if(elementos.length > 1 && elementos.length < 4){
             String cadena;
             if(elementos.length == 2){
                 cadena = elementos[1];
@@ -900,24 +900,26 @@ public class SistemaArchivos {
                      else{System.out.println("Error al eliminar "+cadena);}
                 }
             }else{
-                String[] lineasRuta;
-                boolean recursivo = false;
-                int indice = 1;
-                //Falta verificar el -R por mientras lo manejamos como si hubieran 3 datos
-                if(elementos.length==3){
-                    indice = 2;
-                    recursivo = true;
-                }else{indice = 1;}
-                lineasRuta = elementos[indice].split("/");
-                if(!elementos[indice].equals("/root")){
-                   String rutaInicial = lineasRuta[lineasRuta.length-2];
-                   String archivoDirectorio = lineasRuta[lineasRuta.length-1];
-                   if(!esArchivo(rutaInicial)){
-                       encontrarRuta(lineasRuta);
-                       //eliminarEnRuta(rutaInicial,archivoDirectorio,recursivo);
-                    }    
-               
-                }
+                
+                    String[] lineasRuta;
+                    boolean recursivo = false;
+                    int indice = 1;
+                    if(elementos[1].equals("-r") || elementos[1].equals("-R")){
+                        indice = 2;
+                        recursivo = true;
+                    }else{indice = 1;}
+                    lineasRuta = elementos[indice].split("/");
+                    if(!elementos[indice].equals("/root") && lineasRuta.length>2){
+                       for(int i=0;i<lineasRuta.length-1;i++){
+                           if(esArchivo(lineasRuta[i])){
+                               System.out.println("Error, la ruta tiene un archivo como carpeta");
+                               return;
+                           }
+                       }
+                       List<Archivo> archivosRuta = encontrarRuta(lineasRuta);
+                       eliminarEnRuta(archivosRuta,recursivo); 
+                    }else System.out.println("Error de comando");
+                
             }
         }
     }
