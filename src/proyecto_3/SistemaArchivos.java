@@ -315,15 +315,16 @@ public class SistemaArchivos {
                 // llamado al método
                 break;
             case "chown":
-                comandoChown(elementos);
                 // llamado al método
+                comandoChown(elementos);
                 break;
             case "chgrp":
-                comandoChgrp(elementos);
                 // llamado al método
+                comandoChgrp(elementos);
                 break;
             case "chmod":
                 // llamado al método
+                comandoChmod(elementos);
                 break;
             case "openFile":
                 // llamado al método
@@ -901,20 +902,12 @@ public class SistemaArchivos {
         return false; 
     }
     
-    private boolean esArchivo(String cadena){
-        for(char c : cadena.toCharArray()){
-            if('.' == c){
-                return true;
-            } 
-        }
-        return false; 
     
-    }
     private void comandoRm(String[] elementos) throws IOException {
         if(elementos.length > 1 && elementos.length < 4){
             String cadena =  elementos[1];
             if(elementos.length == 2 && !esRuta(cadena)){
-                if(!esArchivo(rutaActual.nombre)){
+                if(rutaActual.esCarpeta){
                      Archivo archivo = cargarCarpetaArchivo(rutaActual.bloqueInicial,true,null);
                      if(VerificarBloquesRm(archivo,cadena)){
                          System.out.println("Se eliminó correctamente "+cadena);
@@ -932,14 +925,10 @@ public class SistemaArchivos {
                     }else{indice = 1;}
                     lineasRuta = elementos[indice].split("/");
                     if(!elementos[indice].equals("/root") && lineasRuta.length>2){
-                       for(int i=0;i<lineasRuta.length-1;i++){
-                           if(esArchivo(lineasRuta[i])){
-                               System.out.println("Error, la ruta tiene un archivo como carpeta");
-                               return;
-                           }
-                       }
                        List<Archivo> archivosRuta = encontrarRuta(lineasRuta);
-                       eliminarEnRuta(archivosRuta,recursivo); 
+                       if(archivosRuta.isEmpty()){
+                           System.out.println("Ruta no encontrada");
+                       }else eliminarEnRuta(archivosRuta,recursivo); 
                     }else System.out.println("Error de comando");
                 
             }
@@ -1146,6 +1135,18 @@ public class SistemaArchivos {
                 
                 }
             }
+        }
+    
+    }
+    
+    
+    private void comandoChmod(String[] elementos){
+        if(elementos.length > 1 && elementos.length == 3){
+            if(esNumero(elementos[1])){
+                int numero = Integer.valueOf(elementos[1]);
+                
+            
+            }else System.out.println("Los permisos deben ser númericos");
         }
     
     }
