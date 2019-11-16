@@ -24,6 +24,7 @@ public class Archivo {
     GrupoUsuarios grupoUsuarios;
     int bloqueInicial;
     int idbloquePadre;
+    Boolean esVinculo;
     Boolean esCarpeta;
     Boolean estaAbierto;
     Archivo carpetaContenedora;
@@ -44,6 +45,7 @@ public class Archivo {
      * @param bloque 
      * @param esCarpeta 
      * @param contenido 
+     * @param bloqueS 
      */
     public Archivo(int id, int tamanio, String nombre, String ubicacion,
             String permisos, String fechaCreacion, String ultimaModificacion,
@@ -82,6 +84,14 @@ public class Archivo {
     public Archivo(int bloque, Boolean esCarpeta){
         this.bloqueInicial = bloque;
         this.esCarpeta = esCarpeta;
+        this.esVinculo = false;
+    }
+    
+    public Archivo(int bloque, String nombre, Boolean esVinculo){
+        this.bloqueInicial = bloque;
+        this.nombre = nombre;
+        this.esCarpeta = false;
+        this.esVinculo = esVinculo;
     }
     
     public void asignarCarpetaContenedor(Archivo carpetaContenedor){

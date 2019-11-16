@@ -52,6 +52,8 @@ public class EstructuraSistemaArchivos {
     public static final String FINAL_CARPETA            = "[/C]";
     public static final String INICIO_ARCHIVO           = "[A]";
     public static final String FINAL_ARCHIVO            = "[/A]";
+    public static final String INICIO_VINCULO           = "[V]";
+    public static final String FINAL_VINCULO            = "[/V]";
     public static final String CARACTER_RELLENO         = ".";
     
     /**
@@ -211,6 +213,15 @@ public class EstructuraSistemaArchivos {
                 = ((esCarpeta)? INICIO_CARPETA : INICIO_ARCHIVO)    + "\n"
                 + archivo.bloqueInicial        + "\n"
                 + ((esCarpeta)? FINAL_CARPETA : FINAL_ARCHIVO);
+        return referencia;
+    }
+    
+    public static String generarContenidoReferenciaVinculo(Archivo archivo, String nombreVinculo){
+        String referencia
+                = INICIO_VINCULO        + "\n"
+                + archivo.bloqueInicial + "\n"
+                + nombreVinculo         + "\n"
+                + FINAL_VINCULO;
         return referencia;
     }
     
