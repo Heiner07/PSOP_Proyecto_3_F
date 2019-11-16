@@ -911,16 +911,15 @@ public class SistemaArchivos {
     }
     private void comandoRm(String[] elementos) throws IOException {
         if(elementos.length > 1 && elementos.length < 4){
-            String cadena;
-            if(elementos.length == 2){
-                cadena = elementos[1];
-                if(!esRuta(cadena) && !esArchivo(rutaActual.nombre)){
+            String cadena =  elementos[1];
+            if(elementos.length == 2 && !esRuta(cadena)){
+                if(!esArchivo(rutaActual.nombre)){
                      Archivo archivo = cargarCarpetaArchivo(rutaActual.bloqueInicial,true,null);
                      if(VerificarBloquesRm(archivo,cadena)){
                          System.out.println("Se eliminó correctamente "+cadena);
                      }
                      else{System.out.println("Error al eliminar "+cadena);}
-                }
+                }else{System.out.println("Estoy dentro de un archivo");}
             }else{
                 
                     String[] lineasRuta;
