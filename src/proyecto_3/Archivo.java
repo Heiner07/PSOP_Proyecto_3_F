@@ -41,13 +41,13 @@ public class Archivo {
      * @param propietario
      * @param grupoUsuarios 
      * @param bloque 
-     * @param estaAbierto 
+     * @param esCarpeta 
      * @param contenido 
      */
     public Archivo(int id, int tamanio, String nombre, String ubicacion,
             String permisos, String fechaCreacion, String ultimaModificacion,
             Usuario propietario, GrupoUsuarios grupoUsuarios, int bloque,
-            Boolean estaAbierto, List<Archivo> contenido) {
+            Boolean esCarpeta, List<Archivo> contenido) {
         this.id = id;
         this.tamanio = tamanio;
         this.nombre = nombre;
@@ -58,7 +58,8 @@ public class Archivo {
         this.propietario = propietario;
         this.grupoUsuarios = grupoUsuarios;
         this.bloqueInicial = bloque;
-        this.estaAbierto = estaAbierto;
+        this.esCarpeta = esCarpeta;
+        this.estaAbierto = false;
         this.contenido = contenido;
         this.carpetaContenedora = null;
     }

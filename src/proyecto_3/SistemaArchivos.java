@@ -144,7 +144,7 @@ public class SistemaArchivos {
         }
         
         cargarDatos(instrucciones);
-        rutaActual = cargarCarpetaArchivo(1, true); // El bloque 1 contiene la carpeta raíz por cargar.
+        rutaActual = cargarCarpetaArchivo(1, true, null); // El bloque 1 contiene la carpeta raíz por cargar.
         comandoCD(new String[]{"", "root"});
     }
     
@@ -293,7 +293,7 @@ public class SistemaArchivos {
                 // llamado al método
                 break;
             case "mv":
-                // llamado al método
+                comandoMV(elementos);
                 break;
             case "ls":
                 comandoLS(elementos);
@@ -432,7 +432,7 @@ public class SistemaArchivos {
     private void crearUsuarioCarpetaGrupo(Usuario usuarioNuevo){
         Archivo rutaActualTemp;
         try {
-            rutaActualTemp = cargarCarpetaArchivo(3, true);
+            rutaActualTemp = cargarCarpetaArchivo(3, true, null);
             int bloqueLibre = ObtenerBloqueLibre();
             if(bloqueLibre != -1){
                 if(!elementoRepetidoEnCarpeta(usuarioNuevo.nombre, rutaActualTemp)){
@@ -785,7 +785,7 @@ public class SistemaArchivos {
         try{
             for(int i = 0; i < cantidadElementos; i++){
                 elemento = elementos.get(i);
-                elemento = cargarCarpetaArchivo(elemento.bloqueInicial, elemento.esCarpeta);
+                elemento = cargarCarpetaArchivo(elemento.bloqueInicial, elemento.esCarpeta, null);
                 if(elemento.nombre.equals(nombre)){
                     System.out.println("Error. Ya existe un elemento con el nombre "+nombre);
                     return true;
@@ -815,6 +815,14 @@ public class SistemaArchivos {
     private void salirDeCarpeta(){
         if(rutaActual.carpetaContenedora != null){
             rutaActual = rutaActual.carpetaContenedora;
+            Archivo padre = rutaActual.carpetaContenedora;
+            try {
+                rutaActual = cargarCarpetaArchivo(rutaActual.bloqueInicial,
+                        true, (padre != null)? padre.ubicacion: null);
+                rutaActual.asignarCarpetaContenedor(padre);
+            } catch (IOException ex) {
+                System.out.println("Error actualizando la carpeta.");
+            }
         }else{
             System.out.println("Ya está ubicado en la raíz");
         }
@@ -827,7 +835,8 @@ public class SistemaArchivos {
             for(int i = 0; i < cantidadElementosCarpeta; i++){
                 carpetaTem = rutaActual.contenido.get(i);
                 if(carpetaTem.esCarpeta){
-                    carpeta = cargarCarpetaArchivo(carpetaTem.bloqueInicial, true);
+                    carpeta = cargarCarpetaArchivo(carpetaTem.bloqueInicial,
+                            true, rutaActual.ubicacion);
                     if(carpeta.nombre.equals(nombre)){
                         carpeta.asignarCarpetaContenedor(rutaActual);
                         rutaActual = carpeta;
@@ -871,6 +880,246 @@ public class SistemaArchivos {
         }
     }
     
+    private void comandoMV(String[] elementos){
+        int cantidadElementos = elementos.length;
+        if(cantidadElementos > 1){
+            if(cantidadElementos > 2){
+                String nombreArchivo = elementos[1];
+                String nombreNuevoRuta = elementos[2];
+                cambiarNombreRutaArchivoCarpeta(nombreArchivo, nombreNuevoRuta);
+            }else{
+                System.out.println("Especifique un nuevo nombre o directorio.");
+            }
+        }else{
+            System.out.println("Especifique parámetros para el comando.");
+        }
+    }
+    
+    private void cambiarNombreRutaArchivoCarpeta(String nombre, String nombreRutaNuevo){
+        Archivo archivoModificar = obtenerArchivoCarpetaDeCarpeta(rutaActual, nombre);
+        if(archivoModificar != null){
+            if(nombreRutaNuevo.contains("/")){
+                Archivo carpetaDestino;
+                try{
+                    if(nombreRutaNuevo.startsWith("/")){
+                        carpetaDestino = obtenerCarpetaDeRuta(
+                                cargarCarpetaArchivo(1, true, null), nombreRutaNuevo);
+                    }else{
+                        carpetaDestino = obtenerCarpetaDeRuta(
+                                rutaActual, nombreRutaNuevo);
+                    }
+                    if(carpetaDestino != null){//comprobar nombre repetido en carpetadestino
+                        if(!elementoRepetidoEnCarpeta(nombre, carpetaDestino)){
+                            moverArchivoCarpeta(
+                                    archivoModificar, carpetaDestino.bloqueInicial);
+                        }else{
+                            System.out.println("No se puede mover porque ya existe un elemento con el mismo nombre");
+                        }
+                    }else{
+                        System.out.println("La carpeta no existe.");
+                    }
+                }catch(IOException e){
+                    System.out.println("Error leyendo el disco.");
+                }
+            }else{
+                if(!elementoRepetidoEnCarpeta(nombreRutaNuevo, rutaActual)){
+                    cambiarNombreArchivoCarpeta(archivoModificar, nombreRutaNuevo);
+                }else{
+                    System.out.println("No se puede cambiar porque ya existe un elemento con el mismo nombre.");
+                }
+            }
+        }else{
+            System.out.println("El archivo indicado no existe.");
+        }
+    }
+    
+    private void cambiarNombreArchivoCarpeta(Archivo archivoModificar, String nombreNuevo){
+        Bloque bloque;
+        String bloqueNombreCambiado;
+        try{
+            bloque = ObtenerBloque(archivoModificar.bloqueInicial);
+            bloqueNombreCambiado = sustituirNombreCadena(bloque.contenido, nombreNuevo);
+            escribirBloque(bloque.id, bloqueNombreCambiado);// Falta comprobar que quepa en el bloque
+            System.out.println("Se cambió el nombre correctamente.");
+        }catch(IOException e){
+            System.out.println("Error leyendo el disco.");
+        }
+    }
+    
+    private String sustituirNombreCadena(String contenidoBloque, String nombreNuevo){
+        String cadenaFinal = "", linea;
+        String[] lineas = contenidoBloque.split("\n");
+        int cantidadLineas = lineas.length;
+        for(int i = 0; i < cantidadLineas; i++){
+            linea = lineas[i];
+            if(linea.equals(EstructuraSistemaArchivos.INICIO_NOMBRE)){
+                cadenaFinal += linea + "\n";
+                cadenaFinal += nombreNuevo + "\n";
+                i++;
+            }else{
+                cadenaFinal += linea + "\n";
+            }
+        }
+        return cadenaFinal;
+    }
+    
+    private void moverArchivoCarpeta(Archivo archivoCarpetaModificar, int idBloqueDestino){
+        Bloque bloqueCarpetaDestino;
+        String referencia = 
+                EstructuraSistemaArchivos.
+                        generarContenidoReferenciaCarpetaArchivo(
+                                archivoCarpetaModificar, archivoCarpetaModificar.esCarpeta);
+        String bloqueNuevo;
+        Boolean hayEspacio = false, esBloqueNuevo = false;
+        int bloqueBuscado = idBloqueDestino;
+        try{
+            while(true){
+                bloqueCarpetaDestino = ObtenerBloque(bloqueBuscado);
+                bloqueNuevo = agregarReferenciaCarpeta(bloqueCarpetaDestino, referencia);
+                if(hayEspacioEnBloque(bloqueCarpetaDestino, bloqueNuevo)){
+                   hayEspacio = true;
+                   break;
+                }else if(bloqueCarpetaDestino.bloqueSiguiente == -1){
+                    bloqueBuscado = ObtenerBloqueLibre();
+                    if(bloqueBuscado == -1){
+                        hayEspacio = false;
+                        break;
+                    }else{
+                        // Si es un bloque nuevo, entonces le actualizo el bloque siguiente al bloque destino.
+                        actualizarIdSiguienteBloque(bloqueCarpetaDestino, bloqueBuscado);
+                        esBloqueNuevo = true;
+                    }
+                }else{
+                    bloqueBuscado = bloqueCarpetaDestino.bloqueSiguiente;
+                }
+            }if(hayEspacio){
+                escribirBloque(bloqueCarpetaDestino.id, bloqueNuevo);// Se escribe la referencia a la carpeta.
+                if(esBloqueNuevo) actualizarBloquesLibres();
+                eliminarArchivoCarpetaDeCarpeta(archivoCarpetaModificar);// Se elimina la referencia en la carpeta que estaba
+                String carpetaActual = rutaActual.nombre;
+                comandoCD(new String[]{"", ".."});
+                comandoCD(new String[]{"", carpetaActual});
+                if(archivoCarpetaModificar.esCarpeta){// Simple precisión en el mensaje
+                    System.out.println("¡Carpeta movida!");
+                }else{
+                    System.out.println("¡Archivo movido!");
+                }
+            }else{
+                if(archivoCarpetaModificar.esCarpeta){// Simple precisión en el mensaje
+                    System.out.println("Error, no hay espacio para mover la carpeta.");
+                }else{
+                    System.out.println("Error, no hay espacio para mover el archivo.");
+                }
+            }
+        }catch(IOException e){
+            System.out.println("Error leyendo el disco.");
+        }
+    }
+    
+    private void eliminarArchivoCarpetaDeCarpeta(Archivo archivoCarpeta){
+        String bloqueSinReferencia =
+                eliminarReferenciaArchivoCarpeta(rutaActual, archivoCarpeta);
+        try {
+            if(bloqueSinReferencia != null){
+                escribirBloque(rutaActual.bloqueInicial, bloqueSinReferencia);
+            }else{
+                System.out.println("Error limpiando la referencia en la carpeta.");
+            }
+        } catch (IOException ex) {
+            System.out.println("Error limpiando la referencia en la carpeta.");
+        }
+    }
+    
+    /**
+     * archivoEliminar tiene el bloque donde se ubica, usado para eliminar la referencia.
+     * La carpetaContenedora es donde se quiere eliminar dicha referencia.
+     * @param carpetaContenedora
+     * @param idBloque
+     * @return 
+     */
+    private String eliminarReferenciaArchivoCarpeta(Archivo carpetaContenedora,
+            Archivo archivoEliminar){
+        Bloque bloqueContenedor;
+        String[] contenido;
+        String linea, contenidoSinReferencia, idValor;
+        Boolean encontrado = false;
+        int bloqueBuscado = carpetaContenedora.bloqueInicial;
+        int cantidadLineas;
+        try{
+            while(true){
+                bloqueContenedor = ObtenerBloque(bloqueBuscado);
+                contenido = bloqueContenedor.contenido.split("\n");
+                cantidadLineas = contenido.length;
+                contenidoSinReferencia = "";
+                for(int i = 0; i < cantidadLineas; i++){
+                    linea = contenido[i];
+                    if((linea.equals(EstructuraSistemaArchivos.INICIO_ARCHIVO)
+                            && !archivoEliminar.esCarpeta) ||
+                            (linea.equals(EstructuraSistemaArchivos.INICIO_CARPETA)
+                            && archivoEliminar.esCarpeta)){
+                        i++;
+                        idValor = contenido[i];
+                        if(idValor.equals(String.valueOf(archivoEliminar.bloqueInicial))){
+                            i++;
+                            encontrado = true;
+                        }else{
+                            contenidoSinReferencia += linea + "\n" + idValor + "\n";
+                        }
+                    }else{
+                        contenidoSinReferencia += linea + "\n";
+                    }
+                }
+                if(encontrado){
+                    break;// Falata validar si la refencia era la unica (quedaria el bloque vacio), para liberar el bloque si este era el siguiente
+                }else{
+                    bloqueBuscado = bloqueContenedor.bloqueSiguiente;
+                    if(bloqueBuscado == -1){
+                        break;
+                    }
+                }
+            }
+        }catch(IOException e){
+            return null;
+        }return contenidoSinReferencia;
+    }
+    
+    private Archivo obtenerCarpetaDeRuta(Archivo carpetaInicio, String ruta){
+        String[] carpetas = ruta.split("/");
+        int cantidadCarpetas = carpetas.length;
+        Archivo carpetaTemp = carpetaInicio;
+        int i = 0;
+        if(ruta.startsWith("/")){// Para que no considere el primer elemento que es vacio
+            i++;
+        }
+        for(; i < cantidadCarpetas; i++){
+            carpetaTemp =
+                    obtenerArchivoCarpetaDeCarpeta(carpetaTemp, carpetas[i]);
+            if(carpetaTemp == null){
+                return null;
+            }
+        }return carpetaTemp;
+    }
+    
+    private Archivo obtenerArchivoCarpetaDeCarpeta(Archivo carpeta, String nombre){
+        List<Archivo> archivos = carpeta.contenido;
+        int cantidadArchivos = archivos.size();
+        Archivo archivoCarpeta;
+        try{
+            for(int i = 0; i < cantidadArchivos; i++){
+                archivoCarpeta = archivos.get(i);
+                archivoCarpeta = cargarCarpetaArchivo(
+                        archivoCarpeta.bloqueInicial, archivoCarpeta.esCarpeta,
+                        carpeta.ubicacion);
+                if(archivoCarpeta.nombre.equals(nombre)){
+                    return archivoCarpeta;
+                }
+            }
+        }catch(IOException e){
+            System.out.println("Error leyendo el disco.");
+            return null;
+        }return null;
+    }
+    
     private void comandoLS(String[] elementos){
         int cantidadElementos = elementos.length;
         if(cantidadElementos > 1){
@@ -904,7 +1153,8 @@ public class SistemaArchivos {
                     if(recursivo){
                         bloquePadre = carpetaActual;
                         carpetaActual = cargarCarpetaArchivo(
-                            carpetaActual.contenido.get(indiceActual).bloqueInicial, true);
+                            carpetaActual.contenido.get(indiceActual).bloqueInicial,
+                                true, null);
                         indiceCarpeta.add(0);
                         carpetaActual.asignarCarpetaContenedor(bloquePadre);
                         System.out.println("Carpeta: "+carpetaActual.nombre);
@@ -914,12 +1164,14 @@ public class SistemaArchivos {
                             System.out.println("-- Contenido carpeta "+carpetaActual.nombre+":");
                         }
                         carpetaTemp = cargarCarpetaArchivo(
-                            carpetaActual.contenido.get(indiceActual).bloqueInicial, true);
+                            carpetaActual.contenido.get(indiceActual).bloqueInicial,
+                                true, null);
                         System.out.println("Carpeta: "+carpetaTemp.nombre);
                     }
                 }else{
                     archivoTemp = cargarCarpetaArchivo(
-                            carpetaActual.contenido.get(indiceActual).bloqueInicial, false);
+                            carpetaActual.contenido.get(indiceActual).bloqueInicial,
+                            false, null);
                     System.out.println("Archivo: "+archivoTemp.nombre);
                 }
             }
@@ -1049,7 +1301,6 @@ public class SistemaArchivos {
         }
         return cadenaFinal;
     }
-    
     
     private Boolean usuarioRepetido(String usuario){
         int cantidadUsuarios = usuarios.size();
@@ -1361,7 +1612,7 @@ public class SistemaArchivos {
         archivo.close();
     }
     
-    private Archivo cargarCarpetaArchivo(int numeroBloque, Boolean esCarpeta) throws IOException{
+    private Archivo cargarCarpetaArchivo(int numeroBloque, Boolean esCarpeta, String rutaAnterior) throws IOException{
         Archivo carpetaArchivo;
         Bloque bloqueCarpeta;
         String[] lineasBloque;
@@ -1410,8 +1661,9 @@ public class SistemaArchivos {
             
         }
         
-        carpetaArchivo = new Archivo(0, 0, nombre, ubicacion, permisos, fechaC, fechaM,
-                usuarios.get(idUsuario), gruposUsuarios.get(idGrupoUsuario), numeroBloque,
+        carpetaArchivo = new Archivo(0, 0, nombre, (rutaAnterior!=null)?rutaAnterior+nombre+"/" : "/",
+                permisos, fechaC, fechaM, usuarios.get(idUsuario),
+                gruposUsuarios.get(idGrupoUsuario), numeroBloque,
                 esCarpeta, archivos);
         
         return carpetaArchivo;
