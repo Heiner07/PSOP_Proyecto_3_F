@@ -62,6 +62,7 @@ public class Archivo {
         this.grupoUsuarios = grupoUsuarios;
         this.bloqueInicial = bloque;
         this.esCarpeta = esCarpeta;
+        this.esVinculo = false;
         this.estaAbierto = false;
         this.contenido = contenido;
         this.carpetaContenedora = null;
@@ -87,11 +88,12 @@ public class Archivo {
         this.esVinculo = false;
     }
     
-    public Archivo(int bloque, String nombre, Boolean esVinculo){
+    public Archivo(int bloque, String nombre, Boolean esVinculo, Archivo padre){
         this.bloqueInicial = bloque;
         this.nombre = nombre;
         this.esCarpeta = false;
         this.esVinculo = esVinculo;
+        this.carpetaContenedora = padre;
     }
     
     public void asignarCarpetaContenedor(Archivo carpetaContenedor){

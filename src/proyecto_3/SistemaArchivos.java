@@ -1011,7 +1011,9 @@ public class SistemaArchivos {
         try{
             for(int i = 0; i < cantidadElementos; i++){
                 elemento = elementos.get(i);
-                elemento = cargarCarpetaArchivo(elemento.bloqueInicial, elemento.esCarpeta, null);
+                if(!elemento.esVinculo){
+                    elemento = cargarCarpetaArchivo(elemento.bloqueInicial, elemento.esCarpeta, null);
+                }
                 if(elemento.nombre.equals(nombre)){
                     System.out.println("Error. Ya existe un elemento con el nombre "+nombre);
                     return true;
@@ -1229,14 +1231,18 @@ public class SistemaArchivos {
                                 rutaActual, nombreRutaNuevo);
                     }
                     if(carpetaDestino != null){//comprobar nombre repetido en carpetadestino
-                        if(!elementoRepetidoEnCarpeta(nombre, carpetaDestino)){
-                            moverArchivoCarpeta(
-                                    archivoModificar, carpetaDestino.bloqueInicial);
+                        if(carpetaDestino.esCarpeta){
+                            if(!elementoRepetidoEnCarpeta(nombre, carpetaDestino)){
+                                moverArchivoCarpeta(
+                                        archivoModificar, carpetaDestino.bloqueInicial);
+                            }else{
+                                System.out.println("No se puede mover porque ya existe un elemento con el mismo nombre");
+                            }
                         }else{
-                            System.out.println("No se puede mover porque ya existe un elemento con el mismo nombre");
+                            System.out.println("El elemento destino no es carpeta.");
                         }
                     }else{
-                        System.out.println("La carpeta no existe.");
+                        System.out.println("El archivo o carpeta no existe.");
                     }
                 }catch(IOException e){
                     System.out.println("Error leyendo el disco.");
@@ -1249,7 +1255,7 @@ public class SistemaArchivos {
                 }
             }
         }else{
-            System.out.println("El archivo indicado no existe.");
+            System.out.println("El archivo o carpeta indicado no existe.");
         }
     }
     
@@ -1257,9 +1263,18 @@ public class SistemaArchivos {
         Bloque bloque;
         String bloqueNombreCambiado;
         try{
-            bloque = ObtenerBloque(archivoModificar.bloqueInicial);
-            bloqueNombreCambiado = sustituirNombreCadena(bloque.contenido, nombreNuevo);
+            if(archivoModificar.esVinculo){
+                bloque = ObtenerBloque(archivoModificar.carpetaContenedora.bloqueInicial);
+                bloqueNombreCambiado = sustituirNombreVinculoCadena(
+                        bloque.contenido, nombreNuevo, archivoModificar.nombre);
+            }else{
+                bloque = ObtenerBloque(archivoModificar.bloqueInicial);
+                bloqueNombreCambiado = sustituirNombreCadena(bloque.contenido, nombreNuevo);
+            }
             escribirBloque(bloque.id, bloqueNombreCambiado);// Falta comprobar que quepa en el bloque
+            if(archivoModificar.esVinculo){
+                refrescarCarpetaActual(null);
+            }
             System.out.println("Se cambió el nombre correctamente.");
         }catch(IOException e){
             System.out.println("Error leyendo el disco.");
@@ -1283,12 +1298,49 @@ public class SistemaArchivos {
         return cadenaFinal;
     }
     
+    private String sustituirNombreVinculoCadena(String contenidoBloque,
+            String nombreNuevo, String nombreModificar){
+        String cadenaFinal = "", linea;
+        String[] lineas = contenidoBloque.split("\n");
+        Boolean encontrado = false;
+        int cantidadLineas = lineas.length;
+        for(int i = 0; i < cantidadLineas; i++){
+            linea = lineas[i];
+            if(linea.equals(EstructuraSistemaArchivos.INICIO_VINCULO) && !encontrado){
+                cadenaFinal += linea + "\n";// Agregamos el inicio Vinculo
+                i++;
+                linea = lineas[i];// Obtenemos el id del vinculo
+                cadenaFinal += linea + "\n";// Agregamos el id del vinculo
+                i++;
+                linea = lineas[i];// Obtenemos el nombre del vinculo
+                if(linea.equals(nombreModificar)){// Lo comparamos
+                    cadenaFinal += nombreNuevo + "\n";// Agregamos el nuevo
+                    encontrado = true;   
+                }else{
+                    cadenaFinal += linea + "\n";
+                }
+            }else{
+                cadenaFinal += linea + "\n";
+            }
+        }
+        return cadenaFinal;
+    }
+    
     private void moverArchivoCarpeta(Archivo archivoCarpetaModificar, int idBloqueDestino){
         Bloque bloqueCarpetaDestino;
-        String referencia = 
+        String referencia;
+        if(!archivoCarpetaModificar.esVinculo){
+            referencia = 
                 EstructuraSistemaArchivos.
                         generarContenidoReferenciaCarpetaArchivo(
                                 archivoCarpetaModificar, archivoCarpetaModificar.esCarpeta);
+        }else{
+            referencia = 
+                EstructuraSistemaArchivos.
+                            generarContenidoReferenciaVinculo(
+                                    archivoCarpetaModificar,
+                                    archivoCarpetaModificar.nombre);//El mismo nombre, ya que esta referencia ya estaba creada
+        }
         String bloqueNuevo;
         Boolean hayEspacio = false, esBloqueNuevo = false;
         int bloqueBuscado = idBloqueDestino;
@@ -1316,16 +1368,20 @@ public class SistemaArchivos {
                 escribirBloque(bloqueCarpetaDestino.id, bloqueNuevo);// Se escribe la referencia a la carpeta.
                 if(esBloqueNuevo) actualizarBloquesLibres();
                 eliminarArchivoCarpetaDeCarpeta(archivoCarpetaModificar);// Se elimina la referencia en la carpeta que estaba
-                String carpetaActual = rutaActual.nombre;
-                comandoCD(new String[]{"", ".."});
-                comandoCD(new String[]{"", carpetaActual});
-                if(archivoCarpetaModificar.esCarpeta){// Simple precisión en el mensaje
+                refrescarCarpetaActual(null);
+                if(archivoCarpetaModificar.esVinculo){
+                    System.out.println("¡Vínculo movido!");
+                }
+                else if(archivoCarpetaModificar.esCarpeta){// Simple precisión en el mensaje
                     System.out.println("¡Carpeta movida!");
                 }else{
                     System.out.println("¡Archivo movido!");
                 }
             }else{
-                if(archivoCarpetaModificar.esCarpeta){// Simple precisión en el mensaje
+                if(archivoCarpetaModificar.esVinculo){
+                    System.out.println("Error, no hay espacio para mover el vínculo.");
+                }
+                else if(archivoCarpetaModificar.esCarpeta){// Simple precisión en el mensaje
                     System.out.println("Error, no hay espacio para mover la carpeta.");
                 }else{
                     System.out.println("Error, no hay espacio para mover el archivo.");
@@ -1361,7 +1417,7 @@ public class SistemaArchivos {
             Archivo archivoEliminar){
         Bloque bloqueContenedor;
         String[] contenido;
-        String linea, contenidoSinReferencia, idValor;
+        String linea, contenidoSinReferencia, idValor, nombreVinculo;
         Boolean encontrado = false;
         int bloqueBuscado = carpetaContenedora.bloqueInicial;
         int cantidadLineas;
@@ -1384,6 +1440,21 @@ public class SistemaArchivos {
                             encontrado = true;
                         }else{
                             contenidoSinReferencia += linea + "\n" + idValor + "\n";
+                        }
+                    }else if(linea.equals(EstructuraSistemaArchivos.INICIO_VINCULO)
+                            && archivoEliminar.esVinculo){
+                        // Comprobar si el nombre es el mismo
+                        i++;
+                        idValor = contenido[i];
+                        i++;
+                        nombreVinculo = contenido[i];
+                        if(nombreVinculo.equals(archivoEliminar.nombre)){
+                            i++;
+                            encontrado = true;
+                        }else{
+                            contenidoSinReferencia += linea + "\n"
+                                    + idValor + "\n"
+                                    + nombreVinculo + "\n";
                         }
                     }else{
                         contenidoSinReferencia += linea + "\n";
@@ -1427,9 +1498,11 @@ public class SistemaArchivos {
         try{
             for(int i = 0; i < cantidadArchivos; i++){
                 archivoCarpeta = archivos.get(i);
-                archivoCarpeta = cargarCarpetaArchivo(
-                        archivoCarpeta.bloqueInicial, archivoCarpeta.esCarpeta,
-                        carpeta.ubicacion);
+                if(!archivoCarpeta.esVinculo){
+                    archivoCarpeta = cargarCarpetaArchivo(
+                            archivoCarpeta.bloqueInicial, archivoCarpeta.esCarpeta,
+                            carpeta.ubicacion);
+                }
                 if(archivoCarpeta.nombre.equals(nombre)){
                     return archivoCarpeta;
                 }
@@ -1552,17 +1625,7 @@ public class SistemaArchivos {
                 bloqueCarpeta = agregarCarpetaCadena(bloqueDestino, contenidoCarpeta);
                 escribirBloque(bloqueDestino.id, bloqueCarpeta);// Se escribe el bloque con la carpeta.
                 
-                // Se recarga la carpeta actual para obtener la refencia nueva.
-                if(carpetaUsuarios == null ||
-                        carpetaUsuarios.bloqueInicial == rutaActual.bloqueInicial){
-                    if(rutaActual.carpetaContenedora == null){
-                        rutaActual = cargarCarpetaArchivo(1, true, null);
-                    }else{
-                        String carpetaActual = rutaActual.nombre;
-                        comandoCD(new String[]{ "", ".."});
-                        comandoCD(new String[]{ "", carpetaActual});
-                    }
-                }
+                refrescarCarpetaActual(carpetaUsuarios);
                     
                 return true;
             }else{
@@ -1572,6 +1635,20 @@ public class SistemaArchivos {
             }
         }catch(IOException e){
             return false;
+        }
+    }
+    
+    private void refrescarCarpetaActual(Archivo carpetaUsuarios) throws IOException{
+        // Se recarga la carpeta actual para obtener la refencia nueva.
+        if(carpetaUsuarios == null ||
+                carpetaUsuarios.bloqueInicial == rutaActual.bloqueInicial){
+            if(rutaActual.carpetaContenedora == null){
+                rutaActual = cargarCarpetaArchivo(1, true, null);
+            }else{
+                String carpetaActual = rutaActual.nombre;
+                comandoCD(new String[]{ "", ".."});
+                comandoCD(new String[]{ "", carpetaActual});
+            }
         }
     }
     
@@ -1991,7 +2068,9 @@ public class SistemaArchivos {
                             idArchivoCarpeta = Integer.parseInt(lineasBloque[i]);
                             i++;
                             nombreVinculo = lineasBloque[i];
-                            archivos.add(new Archivo(idArchivoCarpeta, nombreVinculo, true));
+                            archivos.add(new Archivo(idArchivoCarpeta,
+                                    nombreVinculo, true,
+                                    new Archivo(bloqueBuscado, true)));
                             i++;
                             break;
                         default:
