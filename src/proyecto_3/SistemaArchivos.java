@@ -275,7 +275,6 @@ public class SistemaArchivos {
                 break;
             case "passwd":
                 comandoPasswd(elementos);
-                // llamado al método
                 break;
             case "su":
                 comandoSU(elementos);
@@ -291,7 +290,6 @@ public class SistemaArchivos {
                 break;
             case "rm":
                 comandoRm(elementos);
-                // llamado al método
                 break;
             case "mv":
                 comandoMV(elementos);
@@ -319,11 +317,9 @@ public class SistemaArchivos {
                 comandoChown(elementos);
                 break;
             case "chgrp":
-                // llamado al método
                 comandoChgrp(elementos);
                 break;
             case "chmod":
-                // llamado al método
                 comandoChmod(elementos);
                 break;
             case "openFile":
@@ -336,13 +332,16 @@ public class SistemaArchivos {
                 // llamado al método
                 break;
             case "viewFCB":
-                // llamado al método
+                comandoViewFCB(elementos);
                 break;
             case "infoFS":
                 // llamado al método
                 break;
             case "note":
                 //llamado al método             
+                break;
+            case "usermod":
+                //llamado al método, agrega usuario a grupo
                 break;
             default:
                 break;
@@ -1242,7 +1241,7 @@ public class SistemaArchivos {
                     if(bloqueLibre != -1){
                         carpetaNueva = new Archivo(0, 0, nombreCarpeta,
                                 rutaActual.ubicacion + nombreCarpeta + "/",
-                                "SI", rutaActual.propietario,
+                                rutaActual.permisos, rutaActual.propietario,
                                 rutaActual.grupoUsuarios, bloqueLibre);
                         if(escribirCarpetaArchivo(carpetaNueva, true, null)){
                             System.out.println("¡Carpeta creada!");
@@ -1449,7 +1448,7 @@ public class SistemaArchivos {
                     if(bloqueLibre != -1){
                         archivoNuevo = new Archivo(0, 0, nombreArchivo,
                                 rutaActual.ubicacion + nombreArchivo,
-                                "SI", rutaActual.propietario,
+                                rutaActual.permisos, rutaActual.propietario,
                                 rutaActual.grupoUsuarios, bloqueLibre);
                         if(escribirCarpetaArchivo(archivoNuevo, false, null)){
                             System.out.println("¡Archivo creado!");
@@ -1900,6 +1899,43 @@ public class SistemaArchivos {
         }catch(IOException e){
             return false;
         }
+    }
+    
+    private void comandoViewFCB(String[] elementos){
+        if(elementos.length > 1){
+            String nombreArchivo = elementos[1];
+            Archivo archivoMostrar = obtenerArchivoCarpetaDeCarpeta(rutaActual, nombreArchivo);
+            if(archivoMostrar != null){
+                try {
+                    if(archivoMostrar.esVinculo){
+                        archivoMostrar = cargarCarpetaArchivo(
+                                archivoMostrar.bloqueInicial, false, rutaActual.ubicacion);
+                    }
+                    if(!archivoMostrar.esCarpeta){
+                        mostrarInfoFCB(archivoMostrar);
+                    }else{
+                        System.out.println("El elemento no es un archivo.");
+                    }
+                } catch (IOException ex) {
+                        System.out.println("Error leyendo la carpeta.");
+                    }
+            }else{
+                System.out.println("El archivo indicado no existe.");
+            }
+        }else{
+            System.out.println("Especifique un nombre de archivo.");
+        }
+    }
+    
+    private void mostrarInfoFCB(Archivo archivo){
+        System.out.println("-Información del archivo:");
+        System.out.println("Nombre: "+archivo.nombre);
+        System.out.println("Dueño: "+archivo.propietario.nombre);
+        System.out.println("Fecha creación: "+archivo.fechaCreacion);
+        System.out.println("Estado: "+((archivo.estaAbierto)? "Abierto" : "Cerrado"));
+        System.out.println("Tamaño: "+archivo.tamanio);
+        System.out.println("Ubicación: "+archivo.ubicacion);
+        System.out.println("-Fin de información");
     }
     
     private void refrescarCarpetaActual(Archivo carpetaUsuarios) throws IOException{
@@ -2355,7 +2391,17 @@ public class SistemaArchivos {
             
         }
         
-        carpetaArchivo = new Archivo(0, 0, nombre, (rutaAnterior!=null)?rutaAnterior+nombre+"/" : "/",
+        // Genero la ruta del archivo o carpeta.
+        if(rutaAnterior != null){
+            ubicacion = rutaAnterior+nombre;
+            if(esCarpeta){
+                ubicacion += "/";
+            }
+        }else{
+            ubicacion = "/";
+        }
+        
+        carpetaArchivo = new Archivo(0, 0, nombre, ubicacion,
                 permisos, fechaC, fechaM, usuarios.get(idUsuario),
                 gruposUsuarios.get(idGrupoUsuario), numeroBloque,
                 esCarpeta, archivos,bloqueSD);

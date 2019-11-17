@@ -125,7 +125,7 @@ public class EstructuraSistemaArchivos {
                 + INICIO_ID+"\n"+1+"\n"+FINAL_ID    + "\n"
                 + INICIO_NOMBRE+"\nraiz\n"+FINAL_NOMBRE+"\n"
                 + INICIO_UBICACION+"\n/\n"+FINAL_UBICACION+"\n"
-                + INICIO_PERMISOS+"\nPERMISOS\n"+FINAL_PERMISOS+"\n"
+                + INICIO_PERMISOS+"\n77\n"+FINAL_PERMISOS+"\n"
                 + INICIO_FECHA_C+"\n"+fechaActual+"\n"+FINAL_FECHA_C+"\n"
                 + INICIO_FECHA_M+"\n"+fechaActual+"\n"+FINAL_FECHA_M+"\n"
                 + INICIO_USUARIO+"\n"+0+"\n"+FINAL_USUARIO+"\n"
@@ -146,7 +146,7 @@ public class EstructuraSistemaArchivos {
                 + INICIO_ID+"\n"+2+"\n"+FINAL_ID    + "\n"
                 + INICIO_NOMBRE+"\nroot\n"+FINAL_NOMBRE+"\n"
                 + INICIO_UBICACION+"\n/root/\n"+FINAL_UBICACION+"\n"
-                + INICIO_PERMISOS+"\nPERMISOS\n"+FINAL_PERMISOS+"\n"
+                + INICIO_PERMISOS+"\n77\n"+FINAL_PERMISOS+"\n"
                 + INICIO_FECHA_C+"\n"+fechaActual+"\n"+FINAL_FECHA_C+"\n"
                 + INICIO_FECHA_M+"\n"+fechaActual+"\n"+FINAL_FECHA_M+"\n"
                 + INICIO_USUARIO+"\n"+0+"\n"+FINAL_USUARIO+"\n"
@@ -161,7 +161,7 @@ public class EstructuraSistemaArchivos {
                 + INICIO_ID+"\n"+3+"\n"+FINAL_ID    + "\n"
                 + INICIO_NOMBRE+"\nusers\n"+FINAL_NOMBRE+"\n"
                 + INICIO_UBICACION+"\n/users/\n"+FINAL_UBICACION+"\n"
-                + INICIO_PERMISOS+"\nPERMISOS\n"+FINAL_PERMISOS+"\n"
+                + INICIO_PERMISOS+"\n77\n"+FINAL_PERMISOS+"\n"
                 + INICIO_FECHA_C+"\n"+fechaActual+"\n"+FINAL_FECHA_C+"\n"
                 + INICIO_FECHA_M+"\n"+fechaActual+"\n"+FINAL_FECHA_M+"\n"
                 + INICIO_USUARIO+"\n"+0+"\n"+FINAL_USUARIO+"\n"
@@ -196,7 +196,7 @@ public class EstructuraSistemaArchivos {
                 // Se define la ubicación
                 + INICIO_UBICACION+"\n"+archivo.ubicacion+"\n"+FINAL_UBICACION+"\n"
                 // Se definen los permisos
-                + INICIO_PERMISOS+"\nSI\n"+FINAL_PERMISOS+"\n"
+                + INICIO_PERMISOS+"\n"+archivo.permisos+"\n"+FINAL_PERMISOS+"\n"
                 // Se establece la fecha de creación
                 + INICIO_FECHA_C+"\n"+fechaActual+"\n"+FINAL_FECHA_C+"\n"
                 // Se establece la fecha de modificación
