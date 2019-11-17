@@ -270,8 +270,15 @@ public class EstructuraSistemaArchivos {
                 + FINAL_ID              + "\n"
                 // Se define el nombre de grupo
                 + INICIO_NOMBRE         + "\n"
-                + grupoUsuario.nombre   + "\n"
-                + FINAL_NOMBRE          + "\n"
+                + grupoUsuario.nombre   + "\n";
+        for (Integer usuarioId : grupoUsuario.usuariosId) {
+            cUsuario
+                    += INICIO_USUARIO   + "\n"
+                    + usuarioId         + "\n"
+                    + FINAL_USUARIO     + "\n";
+        }
+        cUsuario
+                += FINAL_NOMBRE          + "\n"
                 // Se cierra el Usuario
                 + FINAL_G_USUARIO;
         return cUsuario;

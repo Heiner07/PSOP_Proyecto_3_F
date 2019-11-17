@@ -304,7 +304,7 @@ public class SistemaArchivos {
                 comandoCD(elementos);
                 break;
             case "whereis":
-                // llamado al método
+                comandoWhereIs(elementos);
                 break;
             case "ln":
                 comandoLN(elementos);
@@ -1548,6 +1548,65 @@ public class SistemaArchivos {
         }
     }
     
+    private void comandoWhereIs(String[] elementos){
+        if(elementos.length > 1){
+            String nombreArchivo = elementos[1];
+            buscarArchivo(nombreArchivo, rutaActual);
+        }else{
+            System.out.println("Especifique un nombre de archivo.");
+        }
+    }
+    
+    private void buscarArchivo(String nombreBuscado, Archivo rutaInicial){
+        int indiceFinal, indiceActual;
+        Archivo carpetaActual = rutaInicial, bloquePadre, archivoTemp;
+        Boolean encontrado = false;
+        List<Integer> carpetasRevisadas = new ArrayList<>();
+        List<Integer> indiceCarpeta = new ArrayList<>();
+        indiceCarpeta.add(0);
+        try{
+            while(!carpetasRevisadas.contains(rutaInicial.bloqueInicial)){
+                indiceFinal = indiceCarpeta.size()-1;
+                indiceActual = indiceCarpeta.get(indiceFinal);
+                indiceCarpeta.set(indiceFinal, indiceActual+1);
+                if(indiceActual == carpetaActual.contenido.size()){
+                    indiceCarpeta.remove(indiceFinal);
+                    carpetasRevisadas.add(carpetaActual.bloqueInicial);
+                    carpetaActual = carpetaActual.carpetaContenedora;
+                }else if(carpetaActual.contenido.get(indiceActual).esCarpeta){
+                    bloquePadre = carpetaActual;
+                    carpetaActual = cargarCarpetaArchivo(
+                        carpetaActual.contenido.get(indiceActual).bloqueInicial,
+                            true, carpetaActual.ubicacion);
+                    indiceCarpeta.add(0);
+                    carpetaActual.asignarCarpetaContenedor(bloquePadre);
+                }else{
+                    if(carpetaActual.contenido.get(indiceActual).esVinculo){
+                        if(carpetaActual.contenido.get(indiceActual).
+                                nombre.equals(nombreBuscado)){
+                            System.out.println("Vinculo: "+
+                                    carpetaActual.contenido.get(indiceActual).ubicacion);
+                            encontrado = true;
+                        }
+                    }else{
+                        archivoTemp = cargarCarpetaArchivo(
+                                carpetaActual.contenido.get(indiceActual).bloqueInicial,
+                                false, carpetaActual.ubicacion);
+                        if(archivoTemp.nombre.equals(nombreBuscado)){
+                            System.out.println("Archivo: "+archivoTemp.ubicacion);
+                            encontrado = true;
+                        }
+                    }
+                }
+            }
+            if(!encontrado){
+                System.out.println("No se encontró un archivo con ese nombre.");
+            }
+        }catch(IOException e){
+            System.out.println("Error leyendo el disco.");
+        }
+    }
+    
     private void comandoLN(String[] elementos){
         int cantidadElementos = elementos.length;
         if(cantidadElementos > 2){
@@ -2583,7 +2642,9 @@ public class SistemaArchivos {
                             nombreVinculo = lineasBloque[i];
                             archivos.add(new Archivo(idArchivoCarpeta,
                                     nombreVinculo, true,
-                                    new Archivo(bloqueBuscado, true)));
+                                    new Archivo(bloqueBuscado, true),
+                                    ((rutaAnterior != null)? rutaAnterior
+                                            : "") + "/" + nombreVinculo));
                             i++;
                             break;
                         default:
