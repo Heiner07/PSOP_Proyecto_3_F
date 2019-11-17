@@ -1207,14 +1207,66 @@ public class SistemaArchivos {
     
     }
     
+    private boolean verificarNumerosPermisos(String cadena){
+        try{
+            for(char c : cadena.toCharArray()){
+                int n =Character.getNumericValue(c);
+                if(n>=8){
+                    return false;
+                } 
+            }
+            return true; 
+        }catch(Exception e){
+            return false;
+        }    
+    }
+    private String sustituirPermisosCadena(String contenidoBloque, String permisosNuevos){
+        String cadenaFinal = "", linea;
+        String[] lineas = contenidoBloque.split("\n");
+        int cantidadLineas = lineas.length;
+        for(int i = 0; i < cantidadLineas; i++){
+            linea = lineas[i];
+            if(linea.equals(EstructuraSistemaArchivos.INICIO_PERMISOS)){
+                cadenaFinal += (linea + "\n");
+                cadenaFinal += (permisosNuevos + "\n");  
+                i++;
+            }else{
+                cadenaFinal += (linea + "\n");
+            }
+        }
+        return cadenaFinal;
+    }
+    private boolean cambiarPermisosArchivo(String nombreDocumento,String permisosNuevos) throws IOException{
+        String contenido = "";
+        boolean actualizarArchivo = false;
+        Bloque bloque = null;
+        List<Archivo> archivos = obtenerSoloArchivos(rutaActual.contenido);
+        for(Archivo carpetaArchivo: archivos){
+            Archivo archivoAnalizar = cargarCarpetaArchivo(carpetaArchivo.bloqueInicial,carpetaArchivo.esCarpeta,rutaActual.ubicacion);
+            if(archivoAnalizar.nombre.equals(nombreDocumento)){
+                actualizarArchivo = true;
+                bloque = ObtenerBloque(archivoAnalizar.bloqueInicial);
+                contenido = sustituirPermisosCadena(bloque.contenido,permisosNuevos);
+                break;
+            }
+        }
+        if(actualizarArchivo){
+            escribirBloque(bloque.id, contenido);
+            return true;  
+        }
+        else{
+            return false;
+        }
+    }
     
-    private void comandoChmod(String[] elementos){
+    private void comandoChmod(String[] elementos) throws IOException{
         if(elementos.length > 1 && elementos.length == 3){
-            if(esNumero(elementos[1])){
-                int numero = Integer.valueOf(elementos[1]);
-                
-            
-            }else System.out.println("Los permisos deben ser númericos");
+            if(verificarNumerosPermisos(elementos[1]) && Integer.parseInt(elementos[1])<78 && Integer.parseInt(elementos[1])>=0 &&
+                    elementos[1].length()==2){
+                if(cambiarPermisosArchivo(elementos[2],elementos[1])){
+                    System.out.println("Se cambiaron los permisos con éxito");
+                }else System.out.println("No se cambiaron los permisos");
+            }else System.out.println("Error de permisos");
         }
     
     }
