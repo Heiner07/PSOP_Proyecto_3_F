@@ -647,10 +647,10 @@ public class SistemaArchivos {
     
     }
     
-   
+    
     private boolean verificarDocumento(Bloque bloque,Archivo archivo,String nombreDocumento) throws IOException{
         String[] lineasBloque = bloque.contenido.split("\n");
-        int cantidadLineas = lineasBloque.length,idBloqueEliminar=1;
+        int cantidadLineas = lineasBloque.length,idBloqueEliminar=-1;
         String linea,contenido = "";
         boolean actualizarArchivo = false;
         while(true){
@@ -905,17 +905,83 @@ public class SistemaArchivos {
         return false; 
     }
     
+    private boolean esVinculo(String nombre){
+        List<Archivo> archivos = rutaActual.contenido;
+        for(int i=0;i<archivos.size();i++){
+            if(archivos.get(i).esVinculo && archivos.get(i).nombre.equals(nombre)){
+                return true;
+            }  
+        }
+        return false;
+    }
     
+    
+    private boolean eliminarVinculo(String vinculo) throws IOException{
+        Bloque bloque = ObtenerBloque(rutaActual.bloqueInicial);
+        String[] lineasBloque = bloque.contenido.split("\n");
+        int cantidadLineas = lineasBloque.length,idBloqueEliminar= -1;
+        String linea,contenido = "";
+        boolean actualizarArchivo = false;
+        while(true){
+            for(int i = 0; i < cantidadLineas; i++){
+                linea = lineasBloque[i];
+                if(linea.equals(EstructuraSistemaArchivos.INICIO_VINCULO)){
+                    String lineaEstructura = linea;
+                    i++; //Para posicionarme en el id de la carpeta o el archivo
+                    linea = lineasBloque[i]; //estoy en el id
+                    i++; //Para posicionarme en el nombre de la carpeta o el archivo
+                    String lineaNombre = lineasBloque[i]; //estoy en el nombre
+                    if(lineaNombre.equals(vinculo)){//no lo guardo
+                        Archivo archivo = cargarCarpetaArchivo(rutaActual.bloqueInicial,true,null);
+                        if(!PermisosEliminar(archivo)){
+                            contenido += (lineaEstructura + "\n");
+                            contenido += (linea + "\n");
+                            contenido += (lineaNombre + "\n");
+                            
+                        }else {idBloqueEliminar=Integer.parseInt(linea);actualizarArchivo= true; i++;};
+                    
+                    }else{
+                        contenido += (lineaEstructura + "\n");
+                        contenido += (linea + "\n");
+                        contenido += (lineaNombre + "\n");
+                    }
+                        
+                }else{
+                    contenido += (linea + "\n");
+                }
+                    
+                
+            }
+            if(!actualizarArchivo && bloque.bloqueSiguiente != -1){
+               bloque = ObtenerBloque(bloque.bloqueSiguiente);
+               contenido = "";
+               lineasBloque = bloque.contenido.split("\n");
+               cantidadLineas = lineasBloque.length;
+            }else{break;}
+        }
+        if(actualizarArchivo){
+            escribirBloque(bloque.id, contenido);
+            actualizarContenidoRutaActual(idBloqueEliminar);
+            return true;  
+        }
+        else{
+            return false;
+        }
+    }
     private void comandoRm(String[] elementos) throws IOException {
         if(elementos.length > 1 && elementos.length < 4){
             String cadena =  elementos[1];
             if(elementos.length == 2 && !esRuta(cadena)){
                 if(rutaActual.esCarpeta){
                      Archivo archivo = cargarCarpetaArchivo(rutaActual.bloqueInicial,true,null);
-                     if(VerificarBloquesRm(archivo,cadena)){
+                     if(esVinculo(cadena)){
+                         if(eliminarVinculo(cadena)){
+                            System.out.println("Se eliminó correctamente el vínculo "+cadena);
+                         }else{System.out.println("Error al eliminar el vínculo "+cadena);}
+                     
+                     }else if(VerificarBloquesRm(archivo,cadena)){
                          System.out.println("Se eliminó correctamente "+cadena);
-                     }
-                     else{System.out.println("Error al eliminar "+cadena);}
+                     }else{System.out.println("Error al eliminar "+cadena);}
                 }else{System.out.println("Estoy dentro de un archivo");}
             }else{
                 
