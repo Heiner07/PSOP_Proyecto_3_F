@@ -88,9 +88,10 @@ public class Archivo {
         this.esVinculo = false;
     }
     
-    public Archivo(int bloque, String nombre, Boolean esVinculo, Archivo padre){
+    public Archivo(int bloque, String nombre, Boolean esVinculo, Archivo padre, String ubicacion){
         this.bloqueInicial = bloque;
         this.nombre = nombre;
+        this.ubicacion = ubicacion;
         this.esCarpeta = false;
         this.esVinculo = esVinculo;
         this.carpetaContenedora = padre;
