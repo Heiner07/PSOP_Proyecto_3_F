@@ -640,12 +640,13 @@ public class SistemaArchivos {
         int largoDocumentos = archivo.contenido.size();
         for(int i=0;i<largoDocumentos;i++){  
             int bloqueI = archivo.contenido.get(i).bloqueInicial;
-            if( bloqueI == id){
+            if( !archivo.contenido.get(i).esVinculo && bloqueI == id){
                 return archivo.contenido.get(i).esCarpeta;               
             }   
         }return false;
     
     }
+    
    
     private boolean verificarDocumento(Bloque bloque,Archivo archivo,String nombreDocumento) throws IOException{
         String[] lineasBloque = bloque.contenido.split("\n");
@@ -663,7 +664,7 @@ public class SistemaArchivos {
                     int id = Integer.parseInt(linea);
                     if(bloquesLibres.get(id) == 1){
                             Archivo bloqueVerificar = cargarCarpetaArchivo(id,obtenerEsCarpeta(archivo,id),archivo.ubicacion);
-                            if(bloqueVerificar.nombre.equals(nombreDocumento) && bloqueVerificar.contenido.isEmpty() && bloqueVerificar.bloqueS==-1){
+                            if(bloqueVerificar.nombre.equals(nombreDocumento) && verificarHayVinculos(bloqueVerificar.contenido) && bloqueVerificar.bloqueS==-1){//AQUI
                             //Verifico que el archivo no este abierto y que tenga los permisos de usuario o grupo para eliminar
                                 if(PermisosEliminar(bloqueVerificar)){
                                     //Eliminamos el archivo o carpeta
@@ -745,7 +746,7 @@ public class SistemaArchivos {
                         carpetaActual = cargarCarpetaArchivo(carpetaActual.contenido.get(indiceActual).bloqueInicial, true,bloquePadre.ubicacion);
                         indiceCarpeta.add(0);
                         carpetaActual.asignarCarpetaContenedor(bloquePadre);
-                }else{
+                }else if(!carpetaActual.contenido.get(indiceActual).esVinculo){
                     archivoTemp = cargarCarpetaArchivo(carpetaActual.contenido.get(indiceActual).bloqueInicial, false,carpetaActual.ubicacion);
                     Bloque bloque = ObtenerBloque(carpetaActual.bloqueInicial);
                     estadosArchivos.add(verificarDocumento(bloque,carpetaActual,archivoTemp.nombre));
@@ -799,7 +800,7 @@ public class SistemaArchivos {
                 if(idOcupado == 1){
                     List<Archivo> contenidoAnalizar = cargarCarpetaArchivo(i,true,null).contenido;
                     for(Archivo ar:contenidoAnalizar){
-                        if(ar.bloqueInicial==id){
+                        if(!ar.esVinculo && ar.bloqueInicial==id){
                             ubicacion += cargarCarpetaArchivo(i,true,null).ubicacion;
                             return ubicacion;
                         }
@@ -840,11 +841,12 @@ public class SistemaArchivos {
         List<Archivo> archivosRetornar = new ArrayList<>();
         int indice = 1;
         try {
-            archivos = obtenerArchivoPorCadena(rutas[indice]);
+            archivos = obtenerSoloArchivos(obtenerArchivoPorCadena(rutas[indice]));
             indice++;
             int largoArchivos = archivos.size();
             for(int i=0;i<largoArchivos;i++){
                 Archivo archivo = archivos.get(i);
+                archivo.contenido = obtenerSoloArchivos(archivo.contenido);
                 int largoContenido = archivo.contenido.size();
                 int k = 0;
                 while(k<largoContenido){
@@ -856,6 +858,7 @@ public class SistemaArchivos {
                             return archivosRetornar;
                         }else{
                             archivo = archivoAnalizar;
+                            archivo.contenido = obtenerSoloArchivos(archivo.contenido);
                             largoContenido = archivo.contenido.size();
                             k = 0;
                         } 
@@ -1004,7 +1007,8 @@ public class SistemaArchivos {
         List<Integer> carpetasRevisadas = new ArrayList<>();
         List<Integer> indiceCarpeta = new ArrayList<>();
         indiceCarpeta.add(0);
-        List<Archivo> archivos = rutaActual.contenido;
+        List<Archivo> archivos = obtenerSoloArchivos(rutaActual.contenido);
+        
         try {
             for(Archivo carpetaArchivo: archivos){
                 Archivo archivoAnalizar;
@@ -1040,8 +1044,7 @@ public class SistemaArchivos {
                         carpetaActual = cargarCarpetaArchivo(carpetaActual.contenido.get(indiceActual).bloqueInicial, true,bloquePadre.ubicacion);
                         indiceCarpeta.add(0);
                         carpetaActual.asignarCarpetaContenedor(bloquePadre);
-                }else{
-                    //archivoTemp = cargarCarpetaArchivo(carpetaActual.contenido.get(indiceActual).bloqueInicial, false,carpetaActual.ubicacion);
+                }else if(!carpetaActual.contenido.get(indiceActual).esVinculo){
                     Bloque bloque = ObtenerBloque(carpetaActual.contenido.get(indiceActual).bloqueInicial);
                     if(esUsuario){
                         escribirBloque(bloque.id, sustituirIdUsuarioCadena(bloque.contenido,idUsuarioNuevo));
@@ -2368,5 +2371,24 @@ public class SistemaArchivos {
         }catch(NumberFormatException e){
             return false;
         }
+    }
+    
+    private boolean verificarHayVinculos(List<Archivo> archivos){
+        if(archivos ==null)return true;
+        for(Archivo archivo:archivos){
+            if(!archivo.esVinculo)return false;
+        }
+        return true;
+    
+    }
+    
+    private List<Archivo> obtenerSoloArchivos(List<Archivo> archivos){
+        List<Archivo> archivosRetornar = new ArrayList<>();
+        for(Archivo ar:archivos){
+            if(!ar.esVinculo)archivosRetornar.add(ar);
+        
+        }
+        return archivosRetornar;
+    
     }
 }
