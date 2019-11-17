@@ -275,7 +275,6 @@ public class SistemaArchivos {
                 break;
             case "passwd":
                 comandoPasswd(elementos);
-                // llamado al método
                 break;
             case "su":
                 comandoSU(elementos);
@@ -291,7 +290,6 @@ public class SistemaArchivos {
                 break;
             case "rm":
                 comandoRm(elementos);
-                // llamado al método
                 break;
             case "mv":
                 comandoMV(elementos);
@@ -319,11 +317,9 @@ public class SistemaArchivos {
                 comandoChown(elementos);
                 break;
             case "chgrp":
-                // llamado al método
                 comandoChgrp(elementos);
                 break;
             case "chmod":
-                // llamado al método
                 comandoChmod(elementos);
                 break;
             case "openFile":
@@ -343,6 +339,9 @@ public class SistemaArchivos {
                 break;
             case "note":
                 //llamado al método             
+                break;
+            case "usermod":
+                //llamado al método, agrega usuario a grupo
                 break;
             default:
                 break;
@@ -1176,7 +1175,7 @@ public class SistemaArchivos {
                     if(bloqueLibre != -1){
                         carpetaNueva = new Archivo(0, 0, nombreCarpeta,
                                 rutaActual.ubicacion + nombreCarpeta + "/",
-                                "SI", rutaActual.propietario,
+                                rutaActual.permisos, rutaActual.propietario,
                                 rutaActual.grupoUsuarios, bloqueLibre);
                         if(escribirCarpetaArchivo(carpetaNueva, true, null)){
                             System.out.println("¡Carpeta creada!");
@@ -1383,7 +1382,7 @@ public class SistemaArchivos {
                     if(bloqueLibre != -1){
                         archivoNuevo = new Archivo(0, 0, nombreArchivo,
                                 rutaActual.ubicacion + nombreArchivo,
-                                "SI", rutaActual.propietario,
+                                rutaActual.permisos, rutaActual.propietario,
                                 rutaActual.grupoUsuarios, bloqueLibre);
                         if(escribirCarpetaArchivo(archivoNuevo, false, null)){
                             System.out.println("¡Archivo creado!");
