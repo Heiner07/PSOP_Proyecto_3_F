@@ -402,11 +402,6 @@ public class SistemaArchivos {
                 while(true){
                     System.out.print("Ingrese el nombre completo: ");
                     nombre = entradaComandos.nextLine();
-                    /*if(usuarioRepetido(nombre)){
-                        System.out.println("Error, ingrese un nombre válido");
-                    }else{
-                        break;
-                    }*/
                     break;
                 }
                 do{
@@ -1373,7 +1368,7 @@ public class SistemaArchivos {
         String[] lineasBloque = bloque.contenido.split("\n");
         int cantidadLineas = lineasBloque.length,idBloqueEliminar= -1;
         String linea,contenido = "",contenidoTemporal="";
-        boolean actualizarArchivo = false,enGrupo=false;
+        boolean enGrupo=false;
         while(true){
             for(int i = 0; i < cantidadLineas; i++){
                 linea = lineasBloque[i];
@@ -1389,11 +1384,10 @@ public class SistemaArchivos {
                     contenidoTemporal += (linea + "\n");
                 }else{
                     contenido += (linea + "\n");
-                }
-                    
-                
+                }   
             }
-            if(!actualizarArchivo && bloque.bloqueSiguiente != -1){
+            if(bloque.bloqueSiguiente != -1){
+               escribirBloque(bloque.id, contenido);
                bloque = ObtenerBloque(bloque.bloqueSiguiente);
                contenido = "";
                lineasBloque = bloque.contenido.split("\n");
