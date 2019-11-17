@@ -763,16 +763,16 @@ public class SistemaArchivos {
         Usuario usuario = archivoAnalizar.propietario;
         List<Integer> grupoUsuariosId = archivoAnalizar.grupoUsuarios.usuariosId;
         String permisos = archivoAnalizar.permisos;
-        int permisoGrupo = 7; //MODIFICAR ESTO
-        int permisoUsuario = 7;//MODIFICAR ESTO
+        char permisoUsuario = permisos.charAt(0);
+        char permisoGrupo = permisos.charAt(1);
         if (archivosAbiertos.stream().anyMatch((archivo) -> (archivo.bloqueInicial == archivoAnalizar.bloqueInicial))) {
             return false;
         }
         if(grupoUsuariosId.contains(usuarioActual.id)){
-            return permisoGrupo==7;     
+            return permisoGrupo=='7';     
         }else{
             if(usuario.id == usuarioActual.id){
-                return permisoUsuario == 7;
+                return permisoUsuario == '7';
             }
         }
         return false;
@@ -781,14 +781,18 @@ public class SistemaArchivos {
     
     
     private void verificarEliminadosEnRuta(List<Boolean> archivosEliminados){
-        if(archivosEliminados.get(archivosEliminados.size()-1))System.out.println("Se eliminó correctamente");
+        if(archivosEliminados.get(archivosEliminados.size()-1)){
+            System.out.println("Se eliminó correctamente");
+            return;
+        }
         else 
         for(Boolean archivoEliminado:archivosEliminados){
             if(archivoEliminado){
                 System.out.println("Se eliminaron archivos|carpetas pero no la carpeta especificada.");
-                break;
+                return;
             }
         }
+        System.out.println("No se eliminó el archivo"); 
     
     }
     private String obtenerArchivoPadre(int id){
