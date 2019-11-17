@@ -12,10 +12,11 @@ import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import static java.util.stream.Collectors.joining;
+import java.util.stream.Stream;
 
 /**
  *
@@ -1400,6 +1401,8 @@ public class SistemaArchivos {
                grupo.usuariosId.add(idUsuario);
            }    
         }
+        
+        hayEspacioEnBloque(bloque, contenido);
         escribirBloque(bloque.id, contenido);
         return true;
     }
@@ -2059,13 +2062,18 @@ public class SistemaArchivos {
             listarContenidoCarpeta(rutaActual, false);
         }
     }
-    
+    public static String repeat(String str, int times) {
+        return Stream.generate(() -> str).limit(times).collect(joining());
+     }
     private void listarContenidoCarpeta(Archivo carpeta, Boolean recursivo){
         int indiceFinal, indiceActual;
         Archivo carpetaActual = carpeta, carpetaTemp, bloquePadre, archivoTemp;
         List<Integer> carpetasRevisadas = new ArrayList<>();
         List<Integer> indiceCarpeta = new ArrayList<>();
         indiceCarpeta.add(0);
+        int profundidad = 0;
+        String espacio ="\t";
+        carpeta.profundidad = profundidad;
         try{
             while(!carpetasRevisadas.contains(carpeta.bloqueInicial)){
                 indiceFinal = indiceCarpeta.size()-1;
@@ -2075,7 +2083,8 @@ public class SistemaArchivos {
                     indiceCarpeta.remove(indiceFinal);
                     carpetasRevisadas.add(carpetaActual.bloqueInicial);
                     carpetaActual = carpetaActual.carpetaContenedora;
-                    System.out.println("-- Fin contenido");
+                    String prof = repeat(espacio,carpetaActual.profundidad);
+                    System.out.println(prof+"-- Fin contenido");
                 }else if(carpetaActual.contenido.get(indiceActual).esCarpeta){
                     if(recursivo){
                         bloquePadre = carpetaActual;
@@ -2084,26 +2093,34 @@ public class SistemaArchivos {
                                 true, null);
                         indiceCarpeta.add(0);
                         carpetaActual.asignarCarpetaContenedor(bloquePadre);
-                        System.out.println("Carpeta: "+carpetaActual.nombre);
-                        System.out.println("-- Contenido carpeta "+carpetaActual.nombre+":");
+                        String prof = repeat(espacio,carpetaActual.carpetaContenedora.profundidad);
+                        carpetaActual.profundidad = carpetaActual.carpetaContenedora.profundidad+1;
+                        System.out.println(prof+"Carpeta: "+carpetaActual.nombre);
+                        System.out.println(prof+"-- Contenido carpeta "+carpetaActual.nombre+":");
                     }else{
+                        
                         if(indiceActual == 0){
-                            System.out.println("-- Contenido carpeta "+carpetaActual.nombre+":");
+                            String prof = repeat(espacio,carpetaActual.profundidad);
+                            carpetaActual.profundidad = carpetaActual.carpetaContenedora.profundidad;
+                            System.out.println(prof+"Carpeta: "+carpetaActual.nombre);
+                            System.out.println(prof+"-- Contenido carpeta "+carpetaActual.nombre+":");
                         }
                         carpetaTemp = cargarCarpetaArchivo(
                             carpetaActual.contenido.get(indiceActual).bloqueInicial,
                                 true, null);
-                        System.out.println("Carpeta: "+carpetaTemp.nombre);
+                        String prof = repeat(espacio,carpetaActual.profundidad+1);
+                        System.out.println(prof+"Carpeta: "+carpetaTemp.nombre);
                     }
                 }else{
+                    String prof = repeat(espacio,carpetaActual.carpetaContenedora.profundidad+1);
                     if(carpetaActual.contenido.get(indiceActual).esVinculo){
-                        System.out.println("Vinculo: "+
+                        System.out.println(prof+"Vinculo: "+
                                 carpetaActual.contenido.get(indiceActual).nombre);
                     }else{
                         archivoTemp = cargarCarpetaArchivo(
                                 carpetaActual.contenido.get(indiceActual).bloqueInicial,
                                 false, null);
-                        System.out.println("Archivo: "+archivoTemp.nombre);
+                        System.out.println(prof+"Archivo: "+archivoTemp.nombre);
                     }
                 }
             }
@@ -2442,7 +2459,6 @@ public class SistemaArchivos {
     private Boolean hayEspacioEnBloque(Bloque bloque, String contenBloqueNuevo){
         // Se reservan 80 bytes para almacenar los carácteres del valor máximo de int
         int tamanioReservaIdS = 80 - String.valueOf(bloque.bloqueSiguiente).getBytes().length;
-        
         return contenBloqueNuevo.getBytes().length + tamanioReservaIdS < tamanioBloque;
     }
     
