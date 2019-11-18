@@ -341,7 +341,7 @@ public class SistemaArchivos {
                 // llamado al método
                 break;
             case "note":
-                //llamado al método             
+                comandoNote(elementos);
                 break;
             case "usermod":
                 //Ejemplo: usermod luis Gruporoot
@@ -1326,6 +1326,31 @@ public class SistemaArchivos {
        }
        //No encontramos el grupo
        return false;
+    }
+    
+    private void comandoNote(String[] elementos){
+        if(elementos.length > 1){
+            Archivo nuevoArchivo = obtenerArchivoCarpetaDeCarpeta(rutaActual, elementos[1]);
+            if(nuevoArchivo != null && !nuevoArchivo.esCarpeta){
+                cargarArchivoEnEditor(nuevoArchivo);
+            }else{
+                System.out.println("No existe un archivo con ese nombre.");
+            }
+        }else{
+            System.out.println("Especifique parámetros para el comando.");
+        }
+    }
+    
+    private void cargarArchivoEnEditor(Archivo archivoCargar){
+        Archivo archivoCargado;
+        try{
+            archivoCargado = cargarCarpetaArchivo(archivoCargar.bloqueInicial, false, rutaActual.ubicacion);
+            EditorTexto editor = new EditorTexto(null, true, archivoCargado);
+            editor.setVisible(true);
+            // llamar a funcion para guardar el archivo con los cambios.
+        }catch(IOException e){
+            System.out.println("Error cargando el archivo");
+        }
     }
     
     private String verificarGrupo(String nombreGrupo,String cadena,boolean tieneUsuarios,int idUsuario){
