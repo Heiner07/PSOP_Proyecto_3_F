@@ -32,6 +32,7 @@ public class Archivo {
     Archivo carpetaContenedora;
     List<Archivo> contenido;
     int bloqueS;
+    int profundidad;
 
     /**
      * 
