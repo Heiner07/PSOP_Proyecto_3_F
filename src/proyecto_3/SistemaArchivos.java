@@ -9,7 +9,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -41,6 +40,7 @@ public class SistemaArchivos {
     int bloqueUbicadoContrasenia;
     boolean yaEntroContrasenia;
     String informacionBloqueContrasenia;
+    String cadenaUbicacion;
 
     /* Información del programa */
     private final String nombreDisco = "miDiscoDuro.fs";
@@ -63,6 +63,7 @@ public class SistemaArchivos {
         yaEntroContrasenia = false;
         bloqueUbicadoContrasenia = -1;
         informacionBloqueContrasenia = "";
+        cadenaUbicacion ="";
     }
 
     /**
@@ -75,9 +76,9 @@ public class SistemaArchivos {
             if (!sistemaCargado) {
                 cargarSistemaArchivos();
             } else {
-                System.out.print(usuarioActual.nombre+"@miFS:"+rutaActual.ubicacion+"$ ");
+                cadenaUbicacion = usuarioActual.nombre+"@miFS:"+rutaActual.ubicacion+"$ ";
+                System.out.print(cadenaUbicacion);
                 lineaActual = entradaComandos.nextLine();
-                historialComandos += lineaActual + "\n";
                 if (lineaActual.equals("poweroff")) {
                     break;
                 }
@@ -355,6 +356,9 @@ public class SistemaArchivos {
                 comandoUserMod(elementos);
                 //llamado al método, agrega usuario a grupo
                 break;
+            case "historial":
+                comandoHistorial();
+                break;
             default:
                 break;
         }
@@ -383,12 +387,14 @@ public class SistemaArchivos {
         
         
         tamanioDisco = Integer.valueOf(tamanioDiscoTemp);
-        comandoUserAdd(null, true);
+        historialComandos += "format\n";
+        comandoUserAdd(new String[]{""}, true);
         crearSistemaArchivos();
-        //historialComandos += "format\n";
         System.out.println("¡Formato creado!");
     }
-    
+    private void comandoHistorial(){
+        System.out.println(historialComandos);
+    }
     private int obtenerEspacioOcupado(){
         int bytesOcupados = 0;
         try{
@@ -409,10 +415,14 @@ public class SistemaArchivos {
         System.out.println("Tamaño: "+tamanioDisco+"MB");
         System.out.println("Espacio utilizado: "+obtenerEspacioOcupado()+" Bytes");
         System.out.println("Disponible: "+((tamanioBloque*cantidadBloques)-obtenerEspacioOcupado())+" Bytes");
+        historialComandos+= cadenaUbicacion + "infoFS nombre del FileSystem: "+nombreDisco+", Tamaño: "+tamanioDisco+", Espacio Utilizado: "+obtenerEspacioOcupado()+
+                "Bytes, Disponible: "+((tamanioBloque*cantidadBloques)-obtenerEspacioOcupado())+" Bytes"+"\n";
+        
     
     
     }
     private void comandoViewFilesOpen(){
+        historialComandos+= cadenaUbicacion + "viewFilesOpen Total archivos abiertos: "+cantidadArchivosAbiertos +"\n";
         System.out.println("Total de archivos abiertos: "+cantidadArchivosAbiertos);
         for(Archivo archivo:archivosAbiertos){
             System.out.println("Nombre: "+archivo.nombre + ", ubicación: "+archivo.ubicacion);
@@ -510,6 +520,7 @@ public class SistemaArchivos {
     
     private void comandoCat(String[] elementos){
         if(elementos.length==2){
+            historialComandos+= cadenaUbicacion + String.join(" ",elementos) +"\n";
             leerArchivo(elementos[1]);
         
         }
@@ -629,6 +640,7 @@ public class SistemaArchivos {
     }
     private void comandoOpenFile(String[] elementos){
         if(elementos.length==2){
+            historialComandos+= cadenaUbicacion + String.join(" ",elementos) +"\n";
             abrirArchivo(elementos[1]);
         }
     
@@ -636,6 +648,7 @@ public class SistemaArchivos {
     
     private void comandoCloseFile(String[] elementos){
         if(elementos.length==2){
+            historialComandos+= cadenaUbicacion + String.join(" ",elementos) +"\n";
             cerrarArchivo(elementos[1]);
         }
     
@@ -651,6 +664,7 @@ public class SistemaArchivos {
      */
     private void comandoUserAdd(String[] elementos, Boolean root){
         if((!root && elementos.length > 1) || root){
+            historialComandos+= cadenaUbicacion +String.join(" ",elementos) +"\n";             
             String nombre, nombreUsuario, contrasenia, contraseniaTemp;
             if(root){
                 nombreUsuario = "root";
@@ -677,7 +691,6 @@ public class SistemaArchivos {
                         System.out.println("Ingrese un valor válido.");
                     }
                 }while(!contrasenia.equals(contraseniaTemp));
-               // historialComandos+=elementos.toString()+"\n";
                 if(root){
                     usuarioActual = new Usuario(0, nombre, nombreUsuario, contrasenia);
                 }else{
@@ -754,12 +767,12 @@ public class SistemaArchivos {
     private void comandoGroupAdd(String[] elementos){
         if(elementos.length > 1){
             String nombreGrupo;
+            historialComandos+= cadenaUbicacion + String.join(" ",elementos) +"\n";
             nombreGrupo = elementos[1];
             if(!grupoRepetido(nombreGrupo)){
                 GrupoUsuarios grupoNuevo = new GrupoUsuarios(gruposUsuarios.size(),nombreGrupo, null);
                 if(escribirGrupoUsuario(grupoNuevo)){
                     gruposUsuarios.add(grupoNuevo);
-                  //  historialComandos+=elementos+"\n";
                     System.out.println("¡Grupo agregado!");
                 }else{
                     System.out.println("Error al agregar el grupo");
@@ -785,6 +798,7 @@ public class SistemaArchivos {
     private void comandoPasswd(String[] elementos){
         String nombreUsuario, contrasenia, contraseniaTemp;
         if(elementos.length > 1){
+            historialComandos+= cadenaUbicacion + String.join(" ",elementos) +"\n";
             nombreUsuario = elementos[1];
             boolean existe = false;
             for(Usuario usuario:usuarios){
@@ -836,7 +850,6 @@ public class SistemaArchivos {
                     bloqueUbicadoContrasenia = -1;
                     yaEntroContrasenia = false;
                     usuario.contrasenia = contrasenia;
-                   // historialComandos+="passwd "+usuario+ "\n";
                     System.out.println("Se ha cambiado la contraseña con éxito");
                     break; // Importante para que no recorra todo el archivo.
                 }else{
@@ -875,6 +888,7 @@ public class SistemaArchivos {
         Usuario usuarioTem;
         String contrasenia;
         if(elementos.length > 1){
+            historialComandos+= cadenaUbicacion + String.join(" ",elementos) +"\n";
             usuarioTem = obtenerUsuario(elementos[1]);
             if(usuarioTem != null){
                 usuarioActual = usuarioTem;
@@ -888,8 +902,8 @@ public class SistemaArchivos {
             System.out.print("Ingrese la contraseña: ");
             contrasenia = entradaComandos.nextLine();
             if(contrasenia.equals(usuarioTem.contrasenia)){
-              //  historialComandos+=elementos+"\n";
                 usuarioActual = usuarioTem;
+                historialComandos+= cadenaUbicacion + String.join(" ",elementos) +"\n";
             }else{
                 System.out.println("La contraseña no es correcta.");
             }
@@ -1048,13 +1062,11 @@ public class SistemaArchivos {
     private void verificarEliminadosEnRuta(List<Boolean> archivosEliminados){
         if(archivosEliminados.get(archivosEliminados.size()-1)){
             System.out.println("Se eliminó correctamente");
-          //  historialComandos+="rm\n";
             return;
         }
         else 
         for(Boolean archivoEliminado:archivosEliminados){
             if(archivoEliminado){
-              //  historialComandos+="rm\n";
                 System.out.println("Se eliminaron archivos|carpetas pero no la carpeta especificada.");
                 return;
             }
@@ -1157,7 +1169,6 @@ public class SistemaArchivos {
             }else{
                 rutaNoEncontrada = false;
                 if(VerificarBloquesRm(archivoPadre,archivoDirectorio.nombre)){
-                   // historialComandos+="rm\n";
                     System.out.println("Se eliminó correctamente "+archivoDirectorio.nombre);     
                 }else{System.out.println("Error al eliminar "+archivoDirectorio.nombre);}
             
@@ -1242,18 +1253,17 @@ public class SistemaArchivos {
     }
     private void comandoRm(String[] elementos) throws IOException {
         if(elementos.length > 1 && elementos.length < 4){
+            historialComandos+= cadenaUbicacion + String.join(" ",elementos) +"\n";
             String cadena =  elementos[1];
             if(elementos.length == 2 && !esRuta(cadena)){
                 if(rutaActual.esCarpeta){
                      Archivo archivo = cargarCarpetaArchivo(rutaActual.bloqueInicial,true,null);
                      if(esVinculo(cadena)){
                          if(eliminarVinculo(cadena)){
-                         //    historialComandos+="rm\n";
                             System.out.println("Se eliminó correctamente el vínculo "+cadena);
                          }else{System.out.println("Error al eliminar el vínculo "+cadena);}
                      
                      }else if(VerificarBloquesRm(archivo,cadena)){
-                       //  historialComandos+="rm\n";
                          System.out.println("Se eliminó correctamente "+cadena);
                      }else{System.out.println("Error al eliminar "+cadena);}
                 }else{System.out.println("Estoy dentro de un archivo");}
@@ -1405,13 +1415,13 @@ public class SistemaArchivos {
     }
     private void comandoChown(String[] elementos){
         if(elementos.length > 1 && elementos.length < 5){
+            historialComandos+= cadenaUbicacion + String.join(" ",elementos) +"\n";
             if(elementos.length == 3){
                 String nombreUsuario = elementos[1];
                 int idUsuario = obtenerIdUsuario(nombreUsuario);
                 if( idUsuario!=-1 && !esRuta(elementos[2])){
                     try {
                         if(cambiarPropietarioGrupoArchivo(elementos[2],idUsuario,true)){
-                         //   historialComandos+="chown\n";
                             System.out.println("Se cambió el propietario con éxito");
                         }else System.out.println("No se pudo cambiar el propietario");
                     } catch (IOException ex) {
@@ -1425,7 +1435,6 @@ public class SistemaArchivos {
                     int idUsuario = obtenerIdUsuario(nombreUsuario);
                     if(idUsuario!=-1 && !esRuta(elementos[3])){
                         if(cambiarPropietarioGrupoRecursivo(elementos[3],idUsuario,true)){
-                         //   historialComandos+="chown\n";
                             System.out.println("Se cambió el propietario con éxito");
                         }else System.out.println("No se pudo cambiar el propietario");
 
@@ -1450,13 +1459,13 @@ public class SistemaArchivos {
     }
     private void comandoChgrp(String[] elementos){
         if(elementos.length > 1 && elementos.length < 5){
+            historialComandos+= cadenaUbicacion + String.join(" ",elementos) +"\n";
             if(elementos.length == 3){
                 String nombreGrupo = elementos[1];
                 int idGrupo = obtenerIdGrupo(nombreGrupo);
                 if( idGrupo!=-1 && !esRuta(elementos[2])){
                     try {
                         if(cambiarPropietarioGrupoArchivo(elementos[2],idGrupo,false)){
-                         //   historialComandos+="chgrp\n";
                             System.out.println("Se cambió el grupo con éxito");
                         }else System.out.println("No se pudo cambiar el grupo");
                     } catch (IOException ex) {
@@ -1470,7 +1479,6 @@ public class SistemaArchivos {
                     int id = obtenerIdGrupo(nombreGrupo);
                     if(id!=-1 && !esRuta(elementos[3])){
                         if(cambiarPropietarioGrupoRecursivo(elementos[3],id,false)){
-                         //   historialComandos+=elementos+"\n";
                             System.out.println("Se cambió el grupo con éxito");
                         }else System.out.println("No se pudo cambiar el grupo");
 
@@ -1540,10 +1548,10 @@ public class SistemaArchivos {
     
     private void comandoChmod(String[] elementos) throws IOException{
         if(elementos.length > 1 && elementos.length == 3){
+            historialComandos+= cadenaUbicacion + String.join(" ",elementos) +"\n";
             if(verificarNumerosPermisos(elementos[1]) && Integer.parseInt(elementos[1])<78 && Integer.parseInt(elementos[1])>=0 &&
                     elementos[1].length()==2){
                 if(cambiarPermisosArchivo(elementos[2],elementos[1])){
-                  //  historialComandos+=elementos+"\n";
                     System.out.println("Se cambiaron los permisos con éxito");
                 }else System.out.println("No se cambiaron los permisos");
             }else System.out.println("Error de permisos");
@@ -1667,6 +1675,7 @@ public class SistemaArchivos {
     }
     private void comandoUserMod(String[] elementos){
         if(elementos.length > 1 && elementos.length == 3){
+            historialComandos+= cadenaUbicacion + String.join(" ",elementos) +"\n";
             String nombreUsuario = elementos[1];
                 int idUsuario = obtenerIdUsuario(nombreUsuario);
                 if( idUsuario!=-1){
@@ -1686,11 +1695,12 @@ public class SistemaArchivos {
     private void comandoWhoAmI(){
         System.out.println("username: "+usuarioActual.nombre);
         System.out.println("full name: "+usuarioActual.nombreCompleto);
-       // historialComandos+="whoami\n";
+        historialComandos+= cadenaUbicacion + "whoami username:"+usuarioActual.nombre+" fullname: "+usuarioActual.nombreCompleto+"\n";
+       
     }
     
     private void comandoPwd(){
-       // historialComandos+="pwd\n";
+       historialComandos+= cadenaUbicacion + rutaActual.ubicacion +"\n";
         System.out.println(rutaActual.ubicacion);
         
     }
@@ -1698,6 +1708,7 @@ public class SistemaArchivos {
     private void comandoMkdir(String[] elementos){
         int cantidadElementos = elementos.length;
         if(cantidadElementos > 1){
+            historialComandos+= cadenaUbicacion + String.join(" ",elementos) +"\n";
             String nombreCarpeta;
             int bloqueLibre;
             Archivo carpetaNueva;
@@ -1720,7 +1731,6 @@ public class SistemaArchivos {
                     }
                 }
             }
-           // historialComandos+=elementos+"\n";
         }else{
             System.out.println("Especifique un nombre de carpeta");
         }
@@ -1761,11 +1771,12 @@ public class SistemaArchivos {
         int cantidadElementos = elementos.length;
         if(cantidadElementos > 1){
             String parametro = elementos[1];
-          //  historialComandos+=elementos+"\n";
             if(parametro.equals("..")){
                 salirDeCarpeta();
+                historialComandos+= cadenaUbicacion + String.join(" ",elementos) +"\n";
             }else{
                 entrarEnCarpeta(parametro);
+                historialComandos+= cadenaUbicacion + String.join(" ",elementos) +"\n";
             }
         }else{
             System.out.println("Especifique una carpeta.");
@@ -1812,6 +1823,7 @@ public class SistemaArchivos {
     
     private void comandoWhereIs(String[] elementos){
         if(elementos.length > 1){
+            historialComandos+= cadenaUbicacion + String.join(" ",elementos) +"\n";
             String nombreArchivo = elementos[1];
             buscarArchivo(nombreArchivo, rutaActual);
         }else{
@@ -1872,6 +1884,7 @@ public class SistemaArchivos {
     private void comandoLN(String[] elementos){
         int cantidadElementos = elementos.length;
         if(cantidadElementos > 2){
+            historialComandos+= cadenaUbicacion + String.join(" ",elementos) +"\n";
             String nombre = elementos[1];
             if(!elementoRepetidoEnCarpeta(nombre, rutaActual)){
                 String ruta = elementos[2];
@@ -1886,7 +1899,6 @@ public class SistemaArchivos {
                     if(rutaArchivo != null){
                         if(!rutaArchivo.esCarpeta && !rutaArchivo.esVinculo){
                             if(escribirVinculo(nombre, rutaArchivo, null)){
-                           //     historialComandos+=elementos+"\n";
                                 System.out.println("¡Vínculo creado!");
                             }else{
                                 System.out.println("Error al crear el vínculo.");
@@ -1967,6 +1979,7 @@ public class SistemaArchivos {
     private void comandoTouch(String[] elementos){
         int cantidadElementos = elementos.length;
         if(cantidadElementos > 1){
+            historialComandos+= cadenaUbicacion + String.join(" ",elementos) +"\n";
             String nombreArchivo;
             int bloqueLibre;
             Archivo archivoNuevo;
@@ -1980,7 +1993,6 @@ public class SistemaArchivos {
                                 rutaActual.permisos, rutaActual.propietario,
                                 rutaActual.grupoUsuarios, bloqueLibre);
                         if(escribirCarpetaArchivo(archivoNuevo, false, null)){
-                         //   historialComandos+=elementos+"\n";
                             System.out.println("¡Archivo creado!");
                         }else{
                             System.out.println("Error al crear el archivo.");
@@ -1998,11 +2010,11 @@ public class SistemaArchivos {
     private void comandoMV(String[] elementos){
         int cantidadElementos = elementos.length;
         if(cantidadElementos > 1){
+            historialComandos+= cadenaUbicacion + String.join(" ",elementos) +"\n";
             if(cantidadElementos > 2){
                 String nombreArchivo = elementos[1];
                 String nombreNuevoRuta = elementos[2];
                 cambiarNombreRutaArchivoCarpeta(nombreArchivo, nombreNuevoRuta);
-               // historialComandos+=elementos+"\n";
             }else{
                 System.out.println("Especifique un nuevo nombre o directorio.");
             }
@@ -2311,9 +2323,9 @@ public class SistemaArchivos {
     private void comandoLS(String[] elementos){
         int cantidadElementos = elementos.length;
         if(cantidadElementos > 1){
+            historialComandos+= cadenaUbicacion + String.join(" ",elementos) +"\n";
             if(elementos[1].equals("-R")){
                 listarContenidoCarpeta(rutaActual, true);
-               // historialComandos+=elementos+"\n";
             }else{
                 System.out.println("Parámetro de comando no válido.");
             }
@@ -2450,6 +2462,7 @@ public class SistemaArchivos {
     
     private void comandoViewFCB(String[] elementos){
         if(elementos.length > 1){
+            historialComandos+= cadenaUbicacion + String.join(" ",elementos) +"\n";
             String nombreArchivo = elementos[1];
             Archivo archivoMostrar = obtenerArchivoCarpetaDeCarpeta(rutaActual, nombreArchivo);
             if(archivoMostrar != null){
@@ -2459,7 +2472,6 @@ public class SistemaArchivos {
                                 archivoMostrar.bloqueInicial, false, rutaActual.ubicacion);
                     }
                     if(!archivoMostrar.esCarpeta){
-                   //     historialComandos+=elementos+"\n";
                         mostrarInfoFCB(archivoMostrar);
                     }else{
                         System.out.println("El elemento no es un archivo.");
