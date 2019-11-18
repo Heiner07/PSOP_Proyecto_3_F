@@ -560,6 +560,7 @@ public class SistemaArchivos {
                     usuarioActual = new Usuario(0, nombre, nombreUsuario, contrasenia);
                 }else{
                     Usuario usuarioNuevo = new Usuario(usuarios.size(), nombre, nombreUsuario, contrasenia);
+                    
                     crearUsuarioCarpetaGrupo(usuarioNuevo);
                 }
             }else{
@@ -865,7 +866,7 @@ public class SistemaArchivos {
     }
     private List<Boolean> eliminarEnRutaAux(Archivo carpeta){
         int indiceFinal, indiceActual;
-        Archivo carpetaActual = carpeta, carpetaTemp, bloquePadre, archivoTemp,carpetaContenedoraTemp;
+        Archivo carpetaActual = carpeta, bloquePadre, archivoTemp;
         List<Integer> carpetasRevisadas = new ArrayList<>();
         List<Integer> indiceCarpeta = new ArrayList<>();
         indiceCarpeta.add(0);
@@ -1021,7 +1022,7 @@ public class SistemaArchivos {
     }
     private void eliminarEnRuta(List<Archivo> archivos,boolean recursivo) throws IOException{      
        
-        boolean rutaNoEncontrada = true,tienePadre=false;
+        boolean rutaNoEncontrada = true;
         try{
             int largoArchivos = archivos.size();
             Archivo archivoDirectorio = archivos.get(largoArchivos-1);
