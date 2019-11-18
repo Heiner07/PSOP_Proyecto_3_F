@@ -9,6 +9,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -315,6 +316,7 @@ public class SistemaArchivos {
                 break;
             case "cat":
                 // llamado al método
+                comandoCat(elementos);
                 break;
             case "chown":
                 // llamado al método
@@ -414,6 +416,102 @@ public class SistemaArchivos {
         System.out.println("Total de archivos abiertos: "+cantidadArchivosAbiertos);
         for(Archivo archivo:archivosAbiertos){
             System.out.println("Nombre: "+archivo.nombre + ", ubicación: "+archivo.ubicacion);
+        }
+    
+    }
+   
+    private String obtenerCadenaLeer(int numeroBloque){
+        int bloqueS = -1;
+        String linea,cadena="";
+        Boolean leyendoCadena=false;
+        try{
+            Bloque bloqueCarpeta = ObtenerBloque(numeroBloque);
+            bloqueS = bloqueCarpeta.bloqueSiguiente;
+            String[] lineasBloque = bloqueCarpeta.contenido.split("\n");
+            int cantidadLineas = lineasBloque.length;
+            int i= 0;
+            while(true){
+                for(; i < cantidadLineas; i++){
+                    linea = lineasBloque[i];
+                    if(linea.equals("[S]")){
+                        leyendoCadena = true;
+                    }else if(linea.equals("[/S]")){
+                        leyendoCadena = false;
+                    }else if(leyendoCadena){
+                        cadena += (linea);
+                    }
+                }
+                if(bloqueS != -1){
+                    bloqueCarpeta = ObtenerBloque(bloqueS);
+                    lineasBloque = bloqueCarpeta.contenido.split("\n");
+                    cantidadLineas = lineasBloque.length;
+                    i = 0;
+                    bloqueS = bloqueCarpeta.bloqueSiguiente;
+                }else{break;}
+            
+            }
+        }catch(Exception e){
+            return cadena;
+        
+        }
+        return cadena;
+
+    }
+    
+    
+    public static String unHex(String arg) {        
+
+    String str = "";
+    for(int i=0;i<arg.length();i+=2)
+    {
+        String s = arg.substring(i, (i + 2));
+        int decimal = Integer.parseInt(s, 16);
+        str = str + (char) decimal;
+    }       
+    return str;
+}
+    private void leerArchivo(String nombre){
+        int largoContenido = rutaActual.contenido.size();
+        boolean encontroArchivo = false;
+        try{
+            for(int i=0;i<largoContenido;i++){
+                Archivo archivo = rutaActual.contenido.get(i);
+                if(!archivo.esCarpeta){
+                    if(!archivo.esVinculo){
+                        archivo = cargarCarpetaArchivo(
+                                archivo.bloqueInicial, false,
+                                rutaActual.ubicacion);
+                    }
+                    if(archivo.nombre.equals(nombre)){
+                        encontroArchivo = true;
+                        if(verificarArchivoAbierto(archivo)){
+                            archivo = cargarCarpetaArchivo(
+                                archivo.bloqueInicial, false,
+                                rutaActual.ubicacion);
+                            if(PermisosAbrirCerrar(archivo)){
+                                String cadena = obtenerCadenaLeer(archivo.bloqueInicial);
+                                String st = unHex(cadena);
+                                System.out.println(st);
+                            }else System.out.println("No tiene permisos para leer el archivo");
+                        }else{
+                            System.out.println("El archivo o vínculo no está abierto");
+                        }
+                    }
+                }
+
+
+            }
+            if(!encontroArchivo)System.out.println("Archivo o vínculo no existe");
+        }catch(Exception e){
+            System.out.println(e);
+        }
+    
+    }
+    
+    private void comandoCat(String[] elementos){
+        if(elementos.length==2){
+            leerArchivo(elementos[1]);
+        
         }
     
     }
