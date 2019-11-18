@@ -343,6 +343,7 @@ public class SistemaArchivos {
                 break;
             case "infoFS":
                 // llamado al método
+                comandoInfoFs();
                 break;
             case "note":
                 //llamado al método             
@@ -386,6 +387,29 @@ public class SistemaArchivos {
         System.out.println("¡Formato creado!");
     }
     
+    private int obtenerEspacioOcupado(){
+        int bytesOcupados = 0;
+        try{
+            for(int i=0;i<bloquesLibres.size();i++){
+                Bloque bloque = ObtenerBloque(i);
+                bytesOcupados += bloque.contenido.getBytes().length;
+            }
+            return bytesOcupados;
+           
+        }catch(Exception e){
+            return bytesOcupados;
+        }
+    
+    }
+    
+    private void comandoInfoFs(){
+        System.out.println("Nombre del FileSystem: "+nombreDisco);
+        System.out.println("Tamaño: "+tamanioDisco+"MB");
+        System.out.println("Espacio utilizado: "+obtenerEspacioOcupado()+" Bytes");
+        System.out.println("Disponible: "+((tamanioBloque*cantidadBloques)-obtenerEspacioOcupado())+" Bytes");
+    
+    
+    }
     private void comandoViewFilesOpen(){
         System.out.println("Total de archivos abiertos: "+cantidadArchivosAbiertos);
         for(Archivo archivo:archivosAbiertos){
@@ -2925,7 +2949,6 @@ public class SistemaArchivos {
         List<Archivo> archivosRetornar = new ArrayList<>();
         for(Archivo ar:archivos){
             if(!ar.esVinculo)archivosRetornar.add(ar);
-        
         }
         return archivosRetornar;
     
