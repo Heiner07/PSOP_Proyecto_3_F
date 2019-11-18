@@ -328,12 +328,15 @@ public class SistemaArchivos {
                 break;
             case "openFile":
                 // llamado al método
+                comandoOpenFile(elementos);
                 break;
             case "closeFile":
                 // llamado al método
+                comandoCloseFile(elementos);
                 break;
             case "viewFilesOpen":
                 // llamado al método
+                comandoViewFilesOpen();
                 break;
             case "viewFCB":
                 comandoViewFCB(elementos);
@@ -381,6 +384,139 @@ public class SistemaArchivos {
         crearSistemaArchivos();
         //historialComandos += "format\n";
         System.out.println("¡Formato creado!");
+    }
+    
+    private void comandoViewFilesOpen(){
+        System.out.println("Total de archivos abiertos: "+cantidadArchivosAbiertos);
+        for(Archivo archivo:archivosAbiertos){
+            System.out.println("Nombre: "+archivo.nombre + ", ubicación: "+archivo.ubicacion);
+        }
+    
+    }
+    private boolean PermisosAbrirCerrar(Archivo archivoAnalizar){
+        Usuario usuario = archivoAnalizar.propietario;
+        List<Integer> grupoUsuariosId = archivoAnalizar.grupoUsuarios.usuariosId;
+        String permisos = archivoAnalizar.permisos;
+        char permisoUsuario = permisos.charAt(0);
+        char permisoGrupo = permisos.charAt(1);
+        if(usuarioActual.id==0)return true;
+        if(grupoUsuariosId.contains(usuarioActual.id)){
+            return Integer.parseInt(String.valueOf(permisoGrupo))>=4;     
+        }else{
+            if(usuario.id == usuarioActual.id){
+                return Integer.parseInt(String.valueOf(permisoUsuario))>=4;
+            }
+        }
+        return false;
+    
+    }
+    private boolean verificarArchivoAbierto(Archivo archivoVerificar){
+        for(Archivo archivo:archivosAbiertos){
+            //true si el archivo ya esta abierto
+            if(archivo.nombre.equals(archivoVerificar.nombre) && archivo.bloqueInicial==archivoVerificar.bloqueInicial && 
+                    archivo.ubicacion.equals(rutaActual.ubicacion)){
+                return true;
+            }
+        }
+        return false;
+    }
+    private void actualizarArchivosAbiertos(String nombreArchivoVinculo,Archivo archivoBorrar){
+        List<Archivo> archivos = new ArrayList<>();
+        for(Archivo archivo:archivosAbiertos){
+            if(archivo.bloqueInicial != archivoBorrar.bloqueInicial  || !archivo.nombre.equals(nombreArchivoVinculo) || !archivo.ubicacion.equals(rutaActual.ubicacion))
+                archivos.add(archivo);
+        }
+        archivosAbiertos = archivos;
+    }
+    private void abrirArchivo(String nombre){
+        int largoContenido = rutaActual.contenido.size();
+        boolean encontroArchivo = false;
+        try{
+            for(int i=0;i<largoContenido;i++){
+                Archivo archivo = rutaActual.contenido.get(i);
+                if(!archivo.esCarpeta){
+                    if(!archivo.esVinculo){
+                        archivo = cargarCarpetaArchivo(
+                                archivo.bloqueInicial, false,
+                                rutaActual.ubicacion);
+                    }
+                    if(archivo.nombre.equals(nombre)){
+                        encontroArchivo = true;
+                        if(!verificarArchivoAbierto(archivo)){
+                            String vinculoNombre=archivo.nombre;
+                            archivo = cargarCarpetaArchivo(
+                                archivo.bloqueInicial, false,
+                                rutaActual.ubicacion);
+                            if(PermisosAbrirCerrar(archivo)){
+                                cantidadArchivosAbiertos++;
+                                archivosAbiertos.add(new Archivo(archivo.bloqueInicial,vinculoNombre,archivo.esVinculo,null,rutaActual.ubicacion));
+                                System.out.println("Archivo abierto");
+                            }else System.out.println("No tiene permisos para abrir el archivo");
+                        }else{
+                            System.out.println("El archivo o vínculo ya se abrió previamente");
+                        }
+                    }
+                }
+
+
+            }
+            if(!encontroArchivo)System.out.println("Archivo o vínculo no existe");
+        }catch(Exception e){
+            System.out.println("Error abriendo archivo");
+        }
+    
+    }
+    
+    private void cerrarArchivo(String nombre){
+        int largoContenido = rutaActual.contenido.size();
+        boolean encontroArchivo = false;
+        try{
+            for(int i=0;i<largoContenido;i++){
+                Archivo archivo = rutaActual.contenido.get(i);
+                if(!archivo.esCarpeta){
+                    if(!archivo.esVinculo){
+                        archivo = cargarCarpetaArchivo(
+                                archivo.bloqueInicial, archivo.esCarpeta,
+                                rutaActual.ubicacion);
+                    }
+                    if(archivo.nombre.equals(nombre)){
+                        encontroArchivo = true;
+                        if(verificarArchivoAbierto(archivo)){
+                            String vinculoNombre=archivo.nombre;
+                            archivo = cargarCarpetaArchivo(
+                                archivo.bloqueInicial, false,
+                                rutaActual.ubicacion);
+                            if(PermisosAbrirCerrar(archivo)){
+                               cantidadArchivosAbiertos--;
+                               actualizarArchivosAbiertos(vinculoNombre,archivo);
+                               System.out.println("Archivo cerrado");
+                            }else System.out.println("No tiene permisos para cerrar el archivo");
+
+                        }else{
+                            System.out.println("El archivo o vínculo no está abierto");
+                        }
+                    }
+                }
+
+            }
+            if(!encontroArchivo)System.out.println("Archivo o vínculo no existe");
+        }catch(Exception e){
+            System.out.println("Error cerrando archivo");
+        }
+    
+    }
+    private void comandoOpenFile(String[] elementos){
+        if(elementos.length==2){
+            abrirArchivo(elementos[1]);
+        }
+    
+    }
+    
+    private void comandoCloseFile(String[] elementos){
+        if(elementos.length==2){
+            cerrarArchivo(elementos[1]);
+        }
+    
     }
 
     /**
