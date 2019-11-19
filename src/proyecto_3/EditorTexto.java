@@ -15,9 +15,10 @@ import java.awt.event.KeyEvent;
 public class EditorTexto extends javax.swing.JDialog {
 
     private Archivo archivo;
+    private Boolean saliendo;
 
     /**
-     * Creates new form Teclado
+     * Creates new form EditorTexto
      * @param parent
      * @param modal
      * @param archivo
@@ -25,16 +26,21 @@ public class EditorTexto extends javax.swing.JDialog {
     public EditorTexto(java.awt.Frame parent, boolean modal, Archivo archivo) {
         super(parent, modal);
         initComponents();
+        this.saliendo = false;
         this.archivo = archivo;
         this.setLocationRelativeTo(null);
         this.getContentPane().setBackground(Color.BLACK);
         lbInstrucciones.setForeground(Color.WHITE);
         lbTitulo.setForeground(Color.WHITE);
+        lbMSGGuardar1.setForeground(Color.WHITE);
+        lbMSGGuardar2.setForeground(Color.WHITE);
         lbNombreArchivo.setForeground(Color.WHITE);
         taTextoEditando.setBackground(Color.BLACK);
         taTextoEditando.setForeground(Color.WHITE);
         taTextoEditando.setText(archivo.textoArchivo);
         lbNombreArchivo.setText(archivo.nombre);
+        lbMSGGuardar1.setVisible(false);
+        lbMSGGuardar2.setVisible(false);
     }
 
     /**
@@ -51,6 +57,8 @@ public class EditorTexto extends javax.swing.JDialog {
         lbTitulo = new javax.swing.JLabel();
         lbNombreArchivo = new javax.swing.JLabel();
         lbInstrucciones = new javax.swing.JLabel();
+        lbMSGGuardar1 = new javax.swing.JLabel();
+        lbMSGGuardar2 = new javax.swing.JLabel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         setMinimumSize(new java.awt.Dimension(374, 74));
@@ -89,6 +97,14 @@ public class EditorTexto extends javax.swing.JDialog {
         lbInstrucciones.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         lbInstrucciones.setText("Presione Ctrl + X para salir");
 
+        lbMSGGuardar1.setFont(new java.awt.Font("Arial", 0, 12)); // NOI18N
+        lbMSGGuardar1.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        lbMSGGuardar1.setText("Presione S para guardar");
+
+        lbMSGGuardar2.setFont(new java.awt.Font("Arial", 0, 12)); // NOI18N
+        lbMSGGuardar2.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        lbMSGGuardar2.setText("Otra tecla para descartar");
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -102,8 +118,12 @@ public class EditorTexto extends javax.swing.JDialog {
                         .addComponent(lbNombreArchivo)
                         .addGap(0, 0, Short.MAX_VALUE))
                     .addGroup(layout.createSequentialGroup()
-                        .addComponent(lbInstrucciones, javax.swing.GroupLayout.DEFAULT_SIZE, 187, Short.MAX_VALUE)
-                        .addGap(189, 189, 189)))
+                        .addComponent(lbInstrucciones, javax.swing.GroupLayout.DEFAULT_SIZE, 185, Short.MAX_VALUE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                            .addComponent(lbMSGGuardar1, javax.swing.GroupLayout.DEFAULT_SIZE, 176, Short.MAX_VALUE)
+                            .addComponent(lbMSGGuardar2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                        .addGap(9, 9, 9)))
                 .addContainerGap())
         );
         layout.setVerticalGroup(
@@ -116,7 +136,12 @@ public class EditorTexto extends javax.swing.JDialog {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 272, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addComponent(lbInstrucciones, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(lbInstrucciones, javax.swing.GroupLayout.PREFERRED_SIZE, 50, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(lbMSGGuardar1)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(lbMSGGuardar2)))
                 .addContainerGap())
         );
 
@@ -124,10 +149,15 @@ public class EditorTexto extends javax.swing.JDialog {
     }// </editor-fold>//GEN-END:initComponents
 
     private void taTextoEditandoKeyPressed(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_taTextoEditandoKeyPressed
-        
-        if(evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_X){
-            archivo.textoArchivo = taTextoEditando.getText();
-            this.dispose();
+        if(saliendo){
+            if(evt.getKeyCode() == KeyEvent.VK_S){
+                archivo.textoArchivo = taTextoEditando.getText();
+            }this.dispose();
+        }else if(evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_X){
+            saliendo = true;
+            lbInstrucciones.setVisible(false);
+            lbMSGGuardar1.setVisible(true);
+            lbMSGGuardar2.setVisible(true);
         }
         
     }//GEN-LAST:event_taTextoEditandoKeyPressed
@@ -143,6 +173,8 @@ public class EditorTexto extends javax.swing.JDialog {
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JLabel lbInstrucciones;
+    private javax.swing.JLabel lbMSGGuardar1;
+    private javax.swing.JLabel lbMSGGuardar2;
     private javax.swing.JLabel lbNombreArchivo;
     private javax.swing.JLabel lbTitulo;
     private javax.swing.JTextArea taTextoEditando;

@@ -266,6 +266,33 @@ public class SistemaArchivos {
         }
     }
     
+    private Boolean nombreValido(String nombre){
+        int largoNombre = nombre.length();
+        char caracter;
+        if(largoNombre > 30){
+            System.out.println("El nombre es demasiado largo (máximo 30)");
+            return false;
+        }else if(nombre.equals(".")){
+            System.out.println("El nombre no puede ser punto.");
+            return false;
+        }else if(nombre.equals(" ")){
+            System.out.println("El nombre no puede ser espacio.");
+            return false;
+        }
+        for(int i = 0 ; i < largoNombre; i++){
+            caracter = nombre.charAt(i);
+            if(!((caracter >= '0' && caracter <= '9') ||
+                    (caracter >= 'A' && caracter <= 'Z') ||
+                    (caracter >= 'a' && caracter <= 'z') ||
+                    caracter == '.' || caracter == '-' ||
+                    caracter == '_' || caracter == ' ')){
+                System.out.println("El nombre debe ser alfanumérico");
+                return false;
+            }
+        }
+        return true;
+    }
+    
     private void manejadorComandos(String linea) throws IOException {
         String[] elementos = linea.split(" ");
         String comando = elementos[0];
@@ -360,6 +387,7 @@ public class SistemaArchivos {
                 comandoHistorial();
                 break;
             default:
+                System.out.println("No se reconoce el comando.");
                 break;
         }
     }
@@ -671,35 +699,39 @@ public class SistemaArchivos {
             }else{
                 nombreUsuario = elementos[1];
             }
-            if(!usuarioRepetido(nombreUsuario) || root){
-                while(true){
-                    System.out.print("Ingrese el nombre completo: ");
-                    nombre = entradaComandos.nextLine();
-                    break;
-                }
-                do{
-                    System.out.print("Ingrese la contraseña de "+nombreUsuario+": ");
-                    contrasenia = entradaComandos.nextLine();
-                    if(!contrasenia.isEmpty()){
-                        System.out.print("Confirme la contraseña: ");
-                        contraseniaTemp = entradaComandos.nextLine();
-                        if(!contrasenia.equals(contraseniaTemp)){
-                            System.out.println("Las contraseñas deben ser iguales");
+            if(nombreValido(nombreUsuario)){
+                if(!usuarioRepetido(nombreUsuario) || root){
+                    do{
+                        System.out.print("Ingrese el nombre completo: ");
+                        nombre = entradaComandos.nextLine();
+                        if(nombre.isEmpty()){
+                            System.out.println("Error ingrese un valor.");
                         }
+                    }while(!nombreValido(nombre) || nombre.isEmpty());
+                    do{
+                        System.out.print("Ingrese la contraseña de "+nombreUsuario+": ");
+                        contrasenia = entradaComandos.nextLine();
+                        if(!contrasenia.isEmpty()){
+                            System.out.print("Confirme la contraseña: ");
+                            contraseniaTemp = entradaComandos.nextLine();
+                            if(!contrasenia.equals(contraseniaTemp)){
+                                System.out.println("Las contraseñas deben ser iguales");
+                            }
+                        }else{
+                            contraseniaTemp = null;
+                            System.out.println("Ingrese un valor válido.");
+                        }
+                    }while(!contrasenia.equals(contraseniaTemp));
+                    if(root){
+                        usuarioActual = new Usuario(0, nombre, nombreUsuario, contrasenia);
                     }else{
-                        contraseniaTemp = null;
-                        System.out.println("Ingrese un valor válido.");
+                        Usuario usuarioNuevo = new Usuario(usuarios.size(), nombre, nombreUsuario, contrasenia);
+
+                        crearUsuarioCarpetaGrupo(usuarioNuevo);
                     }
-                }while(!contrasenia.equals(contraseniaTemp));
-                if(root){
-                    usuarioActual = new Usuario(0, nombre, nombreUsuario, contrasenia);
                 }else{
-                    Usuario usuarioNuevo = new Usuario(usuarios.size(), nombre, nombreUsuario, contrasenia);
-                    
-                    crearUsuarioCarpetaGrupo(usuarioNuevo);
+                    System.out.println("El nombre de usuario ya existe.");
                 }
-            }else{
-                System.out.println("El nombre de usuario ya existe.");
             }
         }else{
             System.out.println("Especifique un nombre de usuario.");
@@ -769,16 +801,18 @@ public class SistemaArchivos {
             String nombreGrupo;
             historialComandos+= cadenaUbicacion + String.join(" ",elementos) +"\n";
             nombreGrupo = elementos[1];
-            if(!grupoRepetido(nombreGrupo)){
-                GrupoUsuarios grupoNuevo = new GrupoUsuarios(gruposUsuarios.size(),nombreGrupo, null);
-                if(escribirGrupoUsuario(grupoNuevo)){
-                    gruposUsuarios.add(grupoNuevo);
-                    System.out.println("¡Grupo agregado!");
+            if(nombreValido(nombreGrupo)){
+                if(!grupoRepetido(nombreGrupo)){
+                    GrupoUsuarios grupoNuevo = new GrupoUsuarios(gruposUsuarios.size(),nombreGrupo, null);
+                    if(escribirGrupoUsuario(grupoNuevo)){
+                        gruposUsuarios.add(grupoNuevo);
+                        System.out.println("¡Grupo agregado!");
+                    }else{
+                        System.out.println("Error al agregar el grupo");
+                    }
                 }else{
-                    System.out.println("Error al agregar el grupo");
+                    System.out.println("El nombre de grupo ya existe.");
                 }
-            }else{
-                System.out.println("El nombre de grupo ya existe.");
             }
         }else{
             System.out.println("Especifique un nombre de grupo.");
@@ -1740,20 +1774,22 @@ public class SistemaArchivos {
             Archivo carpetaNueva;
             for(int i = 1; i < cantidadElementos; i++){
                 nombreCarpeta = elementos[i];
-                if(!elementoRepetidoEnCarpeta(nombreCarpeta, null)){
-                    bloqueLibre = ObtenerBloqueLibre();
-                    if(bloqueLibre != -1){
-                        carpetaNueva = new Archivo(0, 0, nombreCarpeta,
-                                rutaActual.ubicacion + nombreCarpeta + "/",
-                                rutaActual.permisos, rutaActual.propietario,
-                                rutaActual.grupoUsuarios, bloqueLibre);
-                        if(escribirCarpetaArchivo(carpetaNueva, true, null)){
-                            System.out.println("¡Carpeta creada!");
+                if(nombreValido(nombreCarpeta)){
+                    if(!elementoRepetidoEnCarpeta(nombreCarpeta, null)){
+                        bloqueLibre = ObtenerBloqueLibre();
+                        if(bloqueLibre != -1){
+                            carpetaNueva = new Archivo(0, 0, nombreCarpeta,
+                                    rutaActual.ubicacion + nombreCarpeta + "/",
+                                    rutaActual.permisos, rutaActual.propietario,
+                                    rutaActual.grupoUsuarios, bloqueLibre);
+                            if(escribirCarpetaArchivo(carpetaNueva, true, null)){
+                                System.out.println("¡Carpeta creada!");
+                            }else{
+                                System.out.println("Error al crear la carpeta.");
+                            }
                         }else{
-                            System.out.println("Error al crear la carpeta.");
+                            System.out.println("Error no hay espacio.");
                         }
-                    }else{
-                        System.out.println("Error no hay espacio.");
                     }
                 }
             }
@@ -1912,34 +1948,36 @@ public class SistemaArchivos {
         if(cantidadElementos > 2){
             historialComandos+= cadenaUbicacion + String.join(" ",elementos) +"\n";
             String nombre = elementos[1];
-            if(!elementoRepetidoEnCarpeta(nombre, rutaActual)){
-                String ruta = elementos[2];
-                Archivo rutaArchivo;
-                try{
-                    if(ruta.startsWith("/")){
-                        rutaArchivo = obtenerCarpetaDeRuta(
-                                cargarCarpetaArchivo(1, true, null), ruta);
-                    }else{
-                        rutaArchivo = obtenerCarpetaDeRuta(rutaActual, ruta);
-                    }
-                    if(rutaArchivo != null){
-                        if(!rutaArchivo.esCarpeta && !rutaArchivo.esVinculo){
-                            if(escribirVinculo(nombre, rutaArchivo, null)){
-                                System.out.println("¡Vínculo creado!");
+            if(nombreValido(nombre)){
+                if(!elementoRepetidoEnCarpeta(nombre, rutaActual)){
+                    String ruta = elementos[2];
+                    Archivo rutaArchivo;
+                    try{
+                        if(ruta.startsWith("/")){
+                            rutaArchivo = obtenerCarpetaDeRuta(
+                                    cargarCarpetaArchivo(1, true, null), ruta);
+                        }else{
+                            rutaArchivo = obtenerCarpetaDeRuta(rutaActual, ruta);
+                        }
+                        if(rutaArchivo != null){
+                            if(!rutaArchivo.esCarpeta && !rutaArchivo.esVinculo){
+                                if(escribirVinculo(nombre, rutaArchivo, null)){
+                                    System.out.println("¡Vínculo creado!");
+                                }else{
+                                    System.out.println("Error al crear el vínculo.");
+                                }
                             }else{
-                                System.out.println("Error al crear el vínculo.");
+                                System.out.println("No se puede vincular, porque el elemento es un vinculo o carpeta.");
                             }
                         }else{
-                            System.out.println("No se puede vincular, porque el elemento es un vinculo o carpeta.");
+                            System.out.println("La ruta especificada no existe");
                         }
-                    }else{
-                        System.out.println("La ruta especificada no existe");
+                    }catch(IOException e){
+                        System.out.println("Error leyendo el disco");
                     }
-                }catch(IOException e){
-                    System.out.println("Error leyendo el disco");
+                }else{
+                    System.out.println("No se puede crear el vínculo porque ya existe un elemento con ese nombre.");
                 }
-            }else{
-                System.out.println("No se puede crear el vínculo porque ya existe un elemento con ese nombre.");
             }
         }else{
             System.out.println("Especifique todos los parámetros para el comando.");
@@ -2011,20 +2049,22 @@ public class SistemaArchivos {
             Archivo archivoNuevo;
             for(int i = 1; i < cantidadElementos; i++){
                 nombreArchivo = elementos[i];
-                if(!elementoRepetidoEnCarpeta(nombreArchivo, null)){
-                    bloqueLibre = ObtenerBloqueLibre();
-                    if(bloqueLibre != -1){
-                        archivoNuevo = new Archivo(0, 0, nombreArchivo,
-                                rutaActual.ubicacion + nombreArchivo,
-                                rutaActual.permisos, rutaActual.propietario,
-                                rutaActual.grupoUsuarios, bloqueLibre);
-                        if(escribirCarpetaArchivo(archivoNuevo, false, null)){
-                            System.out.println("¡Archivo creado!");
+                if(nombreValido(nombreArchivo)){
+                    if(!elementoRepetidoEnCarpeta(nombreArchivo, null)){
+                        bloqueLibre = ObtenerBloqueLibre();
+                        if(bloqueLibre != -1){
+                            archivoNuevo = new Archivo(0, 0, nombreArchivo,
+                                    rutaActual.ubicacion + nombreArchivo,
+                                    rutaActual.permisos, rutaActual.propietario,
+                                    rutaActual.grupoUsuarios, bloqueLibre);
+                            if(escribirCarpetaArchivo(archivoNuevo, false, null)){
+                                System.out.println("¡Archivo creado!");
+                            }else{
+                                System.out.println("Error al crear el archivo.");
+                            }
                         }else{
-                            System.out.println("Error al crear el archivo.");
+                            System.out.println("Error no hay espacio.");
                         }
-                    }else{
-                        System.out.println("Error no hay espacio.");
                     }
                 }
             }
@@ -2080,10 +2120,12 @@ public class SistemaArchivos {
                     System.out.println("Error leyendo el disco.");
                 }
             }else{
-                if(!elementoRepetidoEnCarpeta(nombreRutaNuevo, rutaActual)){
-                    cambiarNombreArchivoCarpeta(archivoModificar, nombreRutaNuevo);
-                }else{
-                    System.out.println("No se puede cambiar porque ya existe un elemento con el mismo nombre.");
+                if(nombreValido(nombreRutaNuevo)){
+                    if(!elementoRepetidoEnCarpeta(nombreRutaNuevo, rutaActual)){
+                        cambiarNombreArchivoCarpeta(archivoModificar, nombreRutaNuevo);
+                    }else{
+                        System.out.println("No se puede cambiar porque ya existe un elemento con el mismo nombre.");
+                    }
                 }
             }
         }else{
