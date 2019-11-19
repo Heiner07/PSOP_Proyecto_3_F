@@ -2369,7 +2369,10 @@ public class SistemaArchivos {
         indiceCarpeta.add(0);
         int profundidad = 0;
         String espacio ="\t";
-        carpeta.profundidad = profundidad;
+        Archivo archivoTemporal = new Archivo(1,true);
+        archivoTemporal.profundidad = profundidad;
+        carpetaActual.profundidad = profundidad;
+        carpetaActual.carpetaContenedora = archivoTemporal;
         try{
             while(!carpetasRevisadas.contains(carpeta.bloqueInicial)){
                 indiceFinal = indiceCarpeta.size()-1;
@@ -2397,7 +2400,7 @@ public class SistemaArchivos {
                         
                         if(indiceActual == 0){
                             String prof = repeat(espacio,carpetaActual.profundidad);
-                            carpetaActual.profundidad = carpetaActual.carpetaContenedora.profundidad;
+                            carpetaActual.profundidad = carpetaActual.profundidad;
                             System.out.println(prof+"Carpeta: "+carpetaActual.nombre);
                             System.out.println(prof+"-- Contenido carpeta "+carpetaActual.nombre+":");
                         }
