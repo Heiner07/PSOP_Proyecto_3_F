@@ -1600,6 +1600,7 @@ public class SistemaArchivos {
         if(elementos.length > 1){
             Archivo nuevoArchivo = obtenerArchivoCarpetaDeCarpeta(rutaActual, elementos[1]);
             if(nuevoArchivo != null && !nuevoArchivo.esCarpeta){
+                 historialComandos+= cadenaUbicacion + String.join(" ",elementos) +"\n";
                 cargarArchivoEnEditor(nuevoArchivo);
             }else{
                 System.out.println("No existe un archivo con ese nombre.");
