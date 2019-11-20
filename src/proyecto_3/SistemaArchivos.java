@@ -2421,6 +2421,7 @@ public class SistemaArchivos {
                         i++;
                         idValor = contenido[i];
                         i++;
+                        i++;
                         nombreVinculo = contenido[i];
                         if(nombreVinculo.equals(archivoEliminar.nombre)){
                             i++;
