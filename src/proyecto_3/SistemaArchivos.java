@@ -1121,6 +1121,8 @@ public class SistemaArchivos {
         List<Archivo> archivos;
         List<Archivo> archivosRetornar = new ArrayList<>();
         int indice = 1;
+        System.out.println(Arrays.toString(rutas));
+        if(rutas.length == 0)return archivosRetornar;
         try {
             archivos = obtenerSoloArchivos(obtenerArchivoPorCadena(rutas[indice]));
             indice++;
@@ -1276,12 +1278,13 @@ public class SistemaArchivos {
                     }else{indice = 1;}
                     lineasRuta = elementos[indice].split("/");
                     if(!elementos[indice].toLowerCase().equals("/root/") && !elementos[indice].toLowerCase().equals("/root") && !elementos[indice].toLowerCase().equals("/root/users/") &&
-                            !elementos[indice].toLowerCase().equals("/root") && !elementos[indice].toLowerCase().equals("/") && !elementos[indice].toLowerCase().equals("/root/users")){
+                            !elementos[indice].toLowerCase().equals("/root") && !elementos[indice].toLowerCase().equals("/") && !elementos[indice].toLowerCase().equals("/root/users")
+                            && elementos[indice].toLowerCase().startsWith("/")){
                        List<Archivo> archivosRuta = encontrarRuta(lineasRuta);
                        if(archivosRuta.isEmpty()){
                            System.out.println("Ruta no encontrada");
                        }else eliminarEnRuta(archivosRuta,recursivo); 
-                    }else System.out.println("No se puede eliminar esta carpeta");
+                    }else System.out.println("Error al eliminar");
                 
             }
         }
