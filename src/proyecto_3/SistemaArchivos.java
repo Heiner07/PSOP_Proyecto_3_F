@@ -184,7 +184,7 @@ public class SistemaArchivos {
             }
         
         }
-        imprimirDatos();
+        //imprimirDatos();
     }
     
    
@@ -439,12 +439,14 @@ public class SistemaArchivos {
     }
     
     private void comandoInfoFs(){
+        double espacioUtilizado = obtenerEspacioOcupado()/1000;
+        double espacioDisponible = ((tamanioBloque*cantidadBloques)-obtenerEspacioOcupado())/1000;
         System.out.println("Nombre del FileSystem: "+nombreDisco);
         System.out.println("Tamaño: "+tamanioDisco+"MB");
-        System.out.println("Espacio utilizado: "+obtenerEspacioOcupado()+" Bytes");
-        System.out.println("Disponible: "+((tamanioBloque*cantidadBloques)-obtenerEspacioOcupado())+" Bytes");
-        historialComandos+= cadenaUbicacion + "infoFS nombre del FileSystem: "+nombreDisco+", Tamaño: "+tamanioDisco+", Espacio Utilizado: "+obtenerEspacioOcupado()+
-                "Bytes, Disponible: "+((tamanioBloque*cantidadBloques)-obtenerEspacioOcupado())+" Bytes"+"\n";
+        System.out.println("Espacio utilizado: "+espacioUtilizado+" KB");
+        System.out.println("Disponible: "+espacioDisponible+" KB");
+        historialComandos+= cadenaUbicacion + "infoFS nombre del FileSystem: "+nombreDisco+", Tamaño: "+tamanioDisco+", Espacio Utilizado: "+espacioUtilizado+
+                "KB, Disponible: "+espacioDisponible+"KB"+"\n";
         
     
     
@@ -458,44 +460,6 @@ public class SistemaArchivos {
     
     }
    
-    private String obtenerCadenaLeer(int numeroBloque){
-        int bloqueS = -1;
-        String linea,cadena="";
-        Boolean leyendoCadena=false;
-        try{
-            Bloque bloqueCarpeta = ObtenerBloque(numeroBloque);
-            bloqueS = bloqueCarpeta.bloqueSiguiente;
-            String[] lineasBloque = bloqueCarpeta.contenido.split("\n");
-            int cantidadLineas = lineasBloque.length;
-            int i= 0;
-            while(true){
-                for(; i < cantidadLineas; i++){
-                    linea = lineasBloque[i];
-                    if(linea.equals("[T]")){
-                        leyendoCadena = true;
-                    }else if(linea.equals("[/T]")){
-                        leyendoCadena = false;
-                    }else if(leyendoCadena){
-                        cadena += (linea);
-                    }
-                }
-                if(bloqueS != -1){
-                    bloqueCarpeta = ObtenerBloque(bloqueS);
-                    lineasBloque = bloqueCarpeta.contenido.split("\n");
-                    cantidadLineas = lineasBloque.length;
-                    i = 0;
-                    bloqueS = bloqueCarpeta.bloqueSiguiente;
-                }else{break;}
-            
-            }
-        }catch(Exception e){
-            return cadena;
-        
-        }
-        return cadena;
-
-    }
-    
     
     public static String stringAHexa(byte[] bytes) {
         StringBuilder str = new StringBuilder();
@@ -1157,6 +1121,7 @@ public class SistemaArchivos {
         List<Archivo> archivos;
         List<Archivo> archivosRetornar = new ArrayList<>();
         int indice = 1;
+        if(rutas.length == 0)return archivosRetornar;
         try {
             archivos = obtenerSoloArchivos(obtenerArchivoPorCadena(rutas[indice]));
             indice++;
@@ -1312,12 +1277,13 @@ public class SistemaArchivos {
                     }else{indice = 1;}
                     lineasRuta = elementos[indice].split("/");
                     if(!elementos[indice].toLowerCase().equals("/root/") && !elementos[indice].toLowerCase().equals("/root") && !elementos[indice].toLowerCase().equals("/root/users/") &&
-                            !elementos[indice].toLowerCase().equals("/root") && !elementos[indice].toLowerCase().equals("/") && !elementos[indice].toLowerCase().equals("/root/users")){
+                            !elementos[indice].toLowerCase().equals("/root") && !elementos[indice].toLowerCase().equals("/") && !elementos[indice].toLowerCase().equals("/root/users")
+                            && elementos[indice].toLowerCase().startsWith("/")){
                        List<Archivo> archivosRuta = encontrarRuta(lineasRuta);
                        if(archivosRuta.isEmpty()){
                            System.out.println("Ruta no encontrada");
                        }else eliminarEnRuta(archivosRuta,recursivo); 
-                    }else System.out.println("No se puede eliminar esta carpeta");
+                    }else System.out.println("Error al eliminar");
                 
             }
         }
@@ -1630,13 +1596,33 @@ public class SistemaArchivos {
        //No encontramos el grupo
        return false;
     }
-    
+    private boolean verificarPermisosEscribir(Archivo archivoAnalizar){
+        Usuario usuario = archivoAnalizar.propietario;
+        List<Integer> grupoUsuariosId = archivoAnalizar.grupoUsuarios.usuariosId;
+        String permisos = archivoAnalizar.permisos;
+        int permisoUsuario = Integer.parseInt(String.valueOf(permisos.charAt(0)));
+        int permisoGrupo = Integer.parseInt(String.valueOf(permisos.charAt(1)));
+        
+        if(usuarioActual.id==0)return true;
+        if(grupoUsuariosId.contains(usuarioActual.id)){
+            return permisoGrupo==2 || permisoGrupo==3 || permisoGrupo==6 || permisoGrupo==7;     
+        }else{
+            if(usuario.id == usuarioActual.id){
+                return permisoUsuario == 2 || permisoUsuario == 3 || permisoUsuario == 6 || permisoUsuario == 7;
+            }
+        }
+        return false;
+    }
     private void comandoNote(String[] elementos){
         if(elementos.length > 1){
             Archivo nuevoArchivo = obtenerArchivoCarpetaDeCarpeta(rutaActual, elementos[1]);
             if(nuevoArchivo != null && !nuevoArchivo.esCarpeta){
-                 historialComandos+= cadenaUbicacion + String.join(" ",elementos) +"\n";
-                cargarArchivoEnEditor(nuevoArchivo);
+                if(verificarArchivoAbierto(nuevoArchivo)){
+                    if(verificarPermisosEscribir(nuevoArchivo)){
+                        historialComandos+= cadenaUbicacion + String.join(" ",elementos) +"\n";
+                       cargarArchivoEnEditor(nuevoArchivo);
+                    }else System.out.println("No tiene los permisos de escritura");
+                }else System.out.println("El archivo no está abierto");
             }else{
                 System.out.println("No existe un archivo con ese nombre.");
             }
