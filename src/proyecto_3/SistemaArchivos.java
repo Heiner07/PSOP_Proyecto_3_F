@@ -1219,12 +1219,15 @@ public class SistemaArchivos {
                     i++; //Para posicionarme en el id de la carpeta o el archivo
                     linea = lineasBloque[i]; //estoy en el id
                     i++; //Para posicionarme en el nombre de la carpeta o el archivo
+                    String idArchivo = lineasBloque[i]; //
+                    i++;
                     String lineaNombre = lineasBloque[i]; //estoy en el nombre
                     if(lineaNombre.equals(vinculo)){//no lo guardo
                         Archivo archivo = cargarCarpetaArchivo(rutaActual.bloqueInicial,true,null);
                         if(!PermisosEliminar(archivo)){
                             contenido += (lineaEstructura + "\n");
                             contenido += (linea + "\n");
+                            contenido += (idArchivo + "\n");
                             contenido += (lineaNombre + "\n");
                             
                         }else {idBloqueEliminar=Integer.parseInt(linea);actualizarArchivo= true; i++;};
@@ -1232,6 +1235,7 @@ public class SistemaArchivos {
                     }else{
                         contenido += (lineaEstructura + "\n");
                         contenido += (linea + "\n");
+                        contenido += (idArchivo + "\n");
                         contenido += (lineaNombre + "\n");
                     }
                         
@@ -2936,7 +2940,7 @@ public class SistemaArchivos {
     }
     private Boolean hayEspacioEnBloque(int bloqueSiguiente, String contenBloqueNuevo){
         // Se reservan 80 bytes para almacenar los carácteres del valor máximo de int
-        int tamanioReservaIdS = 80 - String.valueOf(bloqueSiguiente).getBytes().length;
+        int tamanioReservaIdS = 240 - String.valueOf(bloqueSiguiente).getBytes().length;
         return contenBloqueNuevo.getBytes().length + tamanioReservaIdS < tamanioBloque;
     }
     
