@@ -498,7 +498,7 @@ public class SistemaArchivos {
                             archivo = cargarCarpetaArchivo(
                                 archivo.bloqueInicial, false,
                                 rutaActual.ubicacion);
-                            if(PermisosAbrirCerrar(archivo)){
+                            if(PermisosAbrirCerrar(archivo,4)){
                                 String cadena = obtenerCadenaLeer(archivo.bloqueInicial);
                                 String st = unHex(cadena);
                                 System.out.println(st);
@@ -526,7 +526,7 @@ public class SistemaArchivos {
         }
     
     }
-    private boolean PermisosAbrirCerrar(Archivo archivoAnalizar){
+    private boolean PermisosAbrirCerrar(Archivo archivoAnalizar,int permisoMinimo){
         Usuario usuario = archivoAnalizar.propietario;
         List<Integer> grupoUsuariosId = archivoAnalizar.grupoUsuarios.usuariosId;
         String permisos = archivoAnalizar.permisos;
@@ -534,10 +534,10 @@ public class SistemaArchivos {
         char permisoGrupo = permisos.charAt(1);
         if(usuarioActual.id==0)return true;
         if(grupoUsuariosId.contains(usuarioActual.id)){
-            return Integer.parseInt(String.valueOf(permisoGrupo))>=4;     
+            return Integer.parseInt(String.valueOf(permisoGrupo))>=permisoMinimo;     
         }else{
             if(usuario.id == usuarioActual.id){
-                return Integer.parseInt(String.valueOf(permisoUsuario))>=4;
+                return Integer.parseInt(String.valueOf(permisoUsuario))>=permisoMinimo;
             }
         }
         return false;
@@ -580,7 +580,7 @@ public class SistemaArchivos {
                             archivo = cargarCarpetaArchivo(
                                 archivo.bloqueInicial, false,
                                 rutaActual.ubicacion);
-                            if(PermisosAbrirCerrar(archivo)){
+                            if(PermisosAbrirCerrar(archivo,4)){
                                 cantidadArchivosAbiertos++;
                                 archivosAbiertos.add(new Archivo(archivo.bloqueInicial,vinculoNombre,archivo.esVinculo,null,rutaActual.ubicacion));
                                 System.out.println("Archivo abierto");
@@ -619,7 +619,7 @@ public class SistemaArchivos {
                             archivo = cargarCarpetaArchivo(
                                 archivo.bloqueInicial, false,
                                 rutaActual.ubicacion);
-                            if(PermisosAbrirCerrar(archivo)){
+                            if(PermisosAbrirCerrar(archivo,4)){
                                cantidadArchivosAbiertos--;
                                actualizarArchivosAbiertos(vinculoNombre,archivo);
                                System.out.println("Archivo cerrado");
@@ -798,33 +798,35 @@ public class SistemaArchivos {
     private void comandoPasswd(String[] elementos){
         String nombreUsuario, contrasenia, contraseniaTemp;
         if(elementos.length > 1){
-            historialComandos+= cadenaUbicacion + String.join(" ",elementos) +"\n";
-            nombreUsuario = elementos[1];
-            boolean existe = false;
-            for(Usuario usuario:usuarios){
-                if(usuario.nombre.equals(nombreUsuario)){
-                    existe = true;
-                    do{
-                        System.out.print("Ingrese la nueva contraseña de "+nombreUsuario+": ");
-                        contrasenia = entradaComandos.nextLine();
-                        if(!contrasenia.isEmpty()){
-                            System.out.print("Confirme la contraseña: ");
-                            contraseniaTemp = entradaComandos.nextLine();
-                            if(!contrasenia.equals(contraseniaTemp)){
-                                System.out.println("Las contraseñas deben ser iguales");
+            if(usuarioActual.nombre.equals(elementos[1]) || usuarioActual.nombre.equals("root")){
+                historialComandos+= cadenaUbicacion + String.join(" ",elementos) +"\n";
+                nombreUsuario = elementos[1];
+                boolean existe = false;
+                for(Usuario usuario:usuarios){
+                    if(usuario.nombre.equals(nombreUsuario)){
+                        existe = true;
+                        do{
+                            System.out.print("Ingrese la nueva contraseña de "+nombreUsuario+": ");
+                            contrasenia = entradaComandos.nextLine();
+                            if(!contrasenia.isEmpty()){
+                                System.out.print("Confirme la contraseña: ");
+                                contraseniaTemp = entradaComandos.nextLine();
+                                if(!contrasenia.equals(contraseniaTemp)){
+                                    System.out.println("Las contraseñas deben ser iguales");
+                                }
+                            }else{
+                                contraseniaTemp = null;
+                                System.out.println("Ingrese un valor válido.");
                             }
-                        }else{
-                            contraseniaTemp = null;
-                            System.out.println("Ingrese un valor válido.");
-                        }
-                    }while(!contrasenia.equals(contraseniaTemp));
-                    //Cambiamos la contraseña
-                    cambiarContrasenia(usuario,contrasenia);
-                    break;
-                }    
-            }if(!existe){
-                System.out.println("El usuario no existe");      
-            }
+                        }while(!contrasenia.equals(contraseniaTemp));
+                        //Cambiamos la contraseña
+                        cambiarContrasenia(usuario,contrasenia);
+                        break;
+                    }    
+                }if(!existe){
+                    System.out.println("El usuario no existe");      
+                }
+            }else System.out.println("Debe ser root o el mismo usuario.");
         }else{
             System.out.println("Especifique un nombre de usuario.");
         }
@@ -943,7 +945,7 @@ public class SistemaArchivos {
                             Archivo bloqueVerificar = cargarCarpetaArchivo(id,obtenerEsCarpeta(archivo,id),archivo.ubicacion);
                             if(bloqueVerificar.nombre.equals(nombreDocumento) && verificarHayVinculos(bloqueVerificar.contenido) && bloqueVerificar.bloqueS==-1){//AQUI
                             //Verifico que el archivo no este abierto y que tenga los permisos de usuario o grupo para eliminar
-                                if(PermisosEliminar(bloqueVerificar)){
+                                if(PermisosEliminar(bloqueVerificar) && bloqueVerificar.bloqueInicial!=0 && bloqueVerificar.bloqueInicial!=1 && bloqueVerificar.bloqueInicial!=2 && bloqueVerificar.bloqueInicial!=3){
                                     //Eliminamos el archivo o carpeta
                                     //Lo volvemos a la raíz
                                     if(bloqueVerificar.ubicacion.equals((rutaActual.ubicacion+"/")) || bloqueVerificar.ubicacion.equals(rutaActual.ubicacion))
@@ -953,6 +955,10 @@ public class SistemaArchivos {
                                         actualizarBloquesLibres();
                                         actualizarArchivo = true;
                                         i++;
+                                }else{
+                                    contenido += (lineaEstructura + "\n");
+                                    contenido += (linea + "\n");
+                                
                                 }
                             }else{
                                 contenido += (lineaEstructura + "\n");
@@ -1266,9 +1272,8 @@ public class SistemaArchivos {
                      }else if(VerificarBloquesRm(archivo,cadena)){
                          System.out.println("Se eliminó correctamente "+cadena);
                      }else{System.out.println("Error al eliminar "+cadena);}
-                }else{System.out.println("Estoy dentro de un archivo");}
+                }else{System.out.println("Está dentro de un archivo");}
             }else{
-                
                     String[] lineasRuta;
                     boolean recursivo = false;
                     int indice = 1;
@@ -1277,12 +1282,13 @@ public class SistemaArchivos {
                         recursivo = true;
                     }else{indice = 1;}
                     lineasRuta = elementos[indice].split("/");
-                    if(!elementos[indice].equals("/root") && lineasRuta.length>2){
+                    if(!elementos[indice].toLowerCase().equals("/root/") && !elementos[indice].toLowerCase().equals("/root") && !elementos[indice].toLowerCase().equals("/root/users/") &&
+                            !elementos[indice].toLowerCase().equals("/root") && !elementos[indice].toLowerCase().equals("/") && !elementos[indice].toLowerCase().equals("/root/users")){
                        List<Archivo> archivosRuta = encontrarRuta(lineasRuta);
                        if(archivosRuta.isEmpty()){
                            System.out.println("Ruta no encontrada");
                        }else eliminarEnRuta(archivosRuta,recursivo); 
-                    }else System.out.println("Error de comando");
+                    }else System.out.println("No se puede eliminar esta carpeta");
                 
             }
         }
@@ -1331,7 +1337,7 @@ public class SistemaArchivos {
         List<Archivo> archivos = rutaActual.contenido;
         for(Archivo carpetaArchivo: archivos){
             Archivo archivoAnalizar = cargarCarpetaArchivo(carpetaArchivo.bloqueInicial,carpetaArchivo.esCarpeta,rutaActual.ubicacion);
-            if(archivoAnalizar.nombre.equals(nombreDocumento)){
+            if(archivoAnalizar.nombre.equals(nombreDocumento) && archivoAnalizar.bloqueInicial!= 1 && archivoAnalizar.bloqueInicial!= 3 && archivoAnalizar.bloqueInicial!= 2){
                 actualizarArchivo = true;
                 bloque = ObtenerBloque(archivoAnalizar.bloqueInicial);
                 if(esUsario){
@@ -1358,7 +1364,6 @@ public class SistemaArchivos {
         List<Integer> indiceCarpeta = new ArrayList<>();
         indiceCarpeta.add(0);
         List<Archivo> archivos = obtenerSoloArchivos(rutaActual.contenido);
-        
         try {
             for(Archivo carpetaArchivo: archivos){
                 Archivo archivoAnalizar;
@@ -1414,40 +1419,41 @@ public class SistemaArchivos {
     
     }
     private void comandoChown(String[] elementos){
-        if(elementos.length > 1 && elementos.length < 5){
-            historialComandos+= cadenaUbicacion + String.join(" ",elementos) +"\n";
-            if(elementos.length == 3){
-                String nombreUsuario = elementos[1];
-                int idUsuario = obtenerIdUsuario(nombreUsuario);
-                if( idUsuario!=-1 && !esRuta(elementos[2])){
-                    try {
-                        if(cambiarPropietarioGrupoArchivo(elementos[2],idUsuario,true)){
-                            System.out.println("Se cambió el propietario con éxito");
-                        }else System.out.println("No se pudo cambiar el propietario");
-                    } catch (IOException ex) {
-                        System.out.println("ERROR");
-                    }
-                }else System.out.println("Usuario no existe o documento es ruta");
-            
-            }else{
-                if(elementos[1].equals("-R") || elementos[1].equals("-r")){
-                    String nombreUsuario = elementos[2];
+        if(usuarioActual.id==0){
+            if(elementos.length > 1 && elementos.length < 5){
+                historialComandos+= cadenaUbicacion + String.join(" ",elementos) +"\n";
+                if(elementos.length == 3){
+                    String nombreUsuario = elementos[1];
                     int idUsuario = obtenerIdUsuario(nombreUsuario);
-                    if(idUsuario!=-1 && !esRuta(elementos[3])){
-                        if(cambiarPropietarioGrupoRecursivo(elementos[3],idUsuario,true)){
-                            System.out.println("Se cambió el propietario con éxito");
-                        }else System.out.println("No se pudo cambiar el propietario");
-
+                    if( idUsuario!=-1 && !esRuta(elementos[2])){
+                        try {
+                            if(cambiarPropietarioGrupoArchivo(elementos[2],idUsuario,true)){
+                                System.out.println("Se cambió el propietario con éxito");
+                            }else System.out.println("Archivo no encontrado o no tiene permisos");
+                        } catch (IOException ex) {
+                            System.out.println("ERROR");
+                        }
                     }else System.out.println("Usuario no existe o documento es ruta");
-                
+
                 }else{
-                    System.out.println("Error de comando");
-                
-                
+                    if(elementos[1].equals("-R") || elementos[1].equals("-r")){
+                        String nombreUsuario = elementos[2];
+                        int idUsuario = obtenerIdUsuario(nombreUsuario);
+                        if(idUsuario!=-1 && !esRuta(elementos[3])){
+                            if(!(elementos[3].equals("root") || elementos[3].equals("users"))){
+                                if(cambiarPropietarioGrupoRecursivo(elementos[3],idUsuario,true)){
+                                    System.out.println("Se cambió el propietario con éxito");
+                                }else System.out.println("No se pudo cambiar el propietario");
+                            }else System.out.println("No puede cambiar propietario a esta carpeta");
+
+                        }else System.out.println("Usuario no existe o documento es ruta");
+
+                    }else{
+                        System.out.println("Error de comando");
+                    }
                 }
             }
-        }
-    
+        }else System.out.println("Debe ser root");
     }
     
     private int obtenerIdGrupo(String nombreGrupo){
@@ -1459,37 +1465,40 @@ public class SistemaArchivos {
     }
     private void comandoChgrp(String[] elementos){
         if(elementos.length > 1 && elementos.length < 5){
-            historialComandos+= cadenaUbicacion + String.join(" ",elementos) +"\n";
-            if(elementos.length == 3){
-                String nombreGrupo = elementos[1];
-                int idGrupo = obtenerIdGrupo(nombreGrupo);
-                if( idGrupo!=-1 && !esRuta(elementos[2])){
-                    try {
-                        if(cambiarPropietarioGrupoArchivo(elementos[2],idGrupo,false)){
-                            System.out.println("Se cambió el grupo con éxito");
-                        }else System.out.println("No se pudo cambiar el grupo");
-                    } catch (IOException ex) {
-                        System.out.println("ERROR");
-                    }
-                }else System.out.println("Grupo no existe o documento es ruta");
-            
-            }else{
-                if(elementos[1].equals("-R") || elementos[1].equals("-r")){
-                    String nombreGrupo = elementos[2];
-                    int id = obtenerIdGrupo(nombreGrupo);
-                    if(id!=-1 && !esRuta(elementos[3])){
-                        if(cambiarPropietarioGrupoRecursivo(elementos[3],id,false)){
-                            System.out.println("Se cambió el grupo con éxito");
-                        }else System.out.println("No se pudo cambiar el grupo");
-
+            if(usuarioActual.id == 0){
+                historialComandos+= cadenaUbicacion + String.join(" ",elementos) +"\n";
+                if(elementos.length == 3){
+                    String nombreGrupo = elementos[1];
+                    int idGrupo = obtenerIdGrupo(nombreGrupo);
+                    if( idGrupo!=-1 && !esRuta(elementos[2])){
+                        try {
+                            if(cambiarPropietarioGrupoArchivo(elementos[2],idGrupo,false)){
+                                System.out.println("Se cambió el grupo con éxito");
+                            }else System.out.println("Archivo no encontrado o no tiene permisos");
+                        } catch (IOException ex) {
+                            System.out.println("ERROR");
+                        }
                     }else System.out.println("Grupo no existe o documento es ruta");
-                
+
                 }else{
-                    System.out.println("Error de comando");
-                
-                
+                    if(elementos[1].equals("-R") || elementos[1].equals("-r")){
+                        String nombreGrupo = elementos[2];
+                        int id = obtenerIdGrupo(nombreGrupo);
+                        if(id!=-1 && !esRuta(elementos[3])){
+                            if(!(elementos[3].equals("root") || elementos[3].equals("users"))){
+                                if(cambiarPropietarioGrupoRecursivo(elementos[3],id,false)){
+                                System.out.println("Se cambió el grupo con éxito");
+                                }else System.out.println("No se pudo cambiar el grupo");
+                            }else System.out.println("No puede cambiar propietario a esta carpeta");
+                        }else System.out.println("Grupo no existe o documento es ruta");
+
+                    }else{
+                        System.out.println("Error de comando");
+
+
+                    }
                 }
-            }
+            }else System.out.println("Debe ser root");
         }
     
     }
@@ -1530,7 +1539,7 @@ public class SistemaArchivos {
         List<Archivo> archivos = obtenerSoloArchivos(rutaActual.contenido);
         for(Archivo carpetaArchivo: archivos){
             Archivo archivoAnalizar = cargarCarpetaArchivo(carpetaArchivo.bloqueInicial,carpetaArchivo.esCarpeta,rutaActual.ubicacion);
-            if(archivoAnalizar.nombre.equals(nombreDocumento)){
+            if(archivoAnalizar.nombre.equals(nombreDocumento) && PermisosAbrirCerrar(archivoAnalizar,2)){
                 actualizarArchivo = true;
                 bloque = ObtenerBloque(archivoAnalizar.bloqueInicial);
                 contenido = sustituirPermisosCadena(bloque.contenido,permisosNuevos);
@@ -1576,14 +1585,11 @@ public class SistemaArchivos {
            if(grupo.nombre.equals(nombreGrupo)){
                //Verificamos que el usuario no este ya en el grupo
                if(grupo.usuariosId.contains(idUsuario)){
-                   System.out.println("El usuario ya existe en el grupo");
                    return false;
                }
                return true;
            }    
        }
-       //No encontramos el grupo
-        System.out.println("El grupo no existe");
        return false;
     }
     private boolean tieneUsuarios(String nombreGrupo){
@@ -1699,20 +1705,37 @@ public class SistemaArchivos {
         escribirBloque(bloque.id, contenido);
         return true;
     }
+    
+    private boolean existeGrupo(String nombreGrupo){
+        for(GrupoUsuarios grupo:gruposUsuarios){
+           if(grupo.nombre.equals(nombreGrupo)){
+               return true;
+           }    
+       }
+       //No encontramos el grupo
+       return false;
+    
+    
+    }
     private void comandoUserMod(String[] elementos){
         if(elementos.length > 1 && elementos.length == 3){
             historialComandos+= cadenaUbicacion + String.join(" ",elementos) +"\n";
             String nombreUsuario = elementos[1];
                 int idUsuario = obtenerIdUsuario(nombreUsuario);
                 if( idUsuario!=-1){
-                    if(estaUsuarioGrupo(idUsuario,elementos[2])){
-                        try {
-                            agregarUsuarioGrupo(elementos[2],tieneUsuarios(elementos[2]),idUsuario);
-                            System.out.println("Se agregó con éxito");
-                        } catch (IOException ex) {
-                            System.out.println("No se pudo agregar el usuario al grupo");
-                        }
-                    }
+                    if(existeGrupo(elementos[2])){
+                        //Verificamos que el usuario actual este en el grupo al que desea que se agregue el usuario o bien puede ser root
+                        if(usuarioActual.id == 0 || !estaUsuarioGrupo(usuarioActual.id,elementos[2])){
+                            if(estaUsuarioGrupo(idUsuario,elementos[2])){
+                                try {
+                                    agregarUsuarioGrupo(elementos[2],tieneUsuarios(elementos[2]),idUsuario);
+                                    System.out.println("Se agregó con éxito");
+                                } catch (IOException ex) {
+                                    System.out.println("No se pudo agregar el usuario al grupo");
+                                }
+                            }else System.out.println("El usuario ya existe en el grupo");
+                        }else System.out.println("El usuario actual debe estar en el grupo al que se desea agregar");
+                    }else System.out.println("No existe el grupo");
                 }else System.out.println("Usuario no existe");
         }
     
@@ -2373,7 +2396,10 @@ public class SistemaArchivos {
         Archivo archivoTemporal = new Archivo(1,true);
         archivoTemporal.profundidad = profundidad;
         carpetaActual.profundidad = profundidad;
-        carpetaActual.carpetaContenedora = archivoTemporal;
+        boolean entra = true;
+        if(carpetaActual.bloqueInicial==1){
+            carpetaActual.carpetaContenedora = archivoTemporal;
+        }
         try{
             while(!carpetasRevisadas.contains(carpeta.bloqueInicial)){
                 indiceFinal = indiceCarpeta.size()-1;
@@ -2384,8 +2410,10 @@ public class SistemaArchivos {
                     carpetasRevisadas.add(carpetaActual.bloqueInicial);
                     carpetaActual = carpetaActual.carpetaContenedora;
                     String prof = repeat(espacio,carpetaActual.profundidad);
+                    if(entra)System.out.println(prof+"Contenido carpeta: ");
                     System.out.println(prof+"-- Fin contenido");
                 }else if(carpetaActual.contenido.get(indiceActual).esCarpeta){
+                    entra = false;
                     if(recursivo){
                         bloquePadre = carpetaActual;
                         carpetaActual = cargarCarpetaArchivo(
@@ -2398,7 +2426,6 @@ public class SistemaArchivos {
                         System.out.println(prof+"Carpeta: "+carpetaActual.nombre);
                         System.out.println(prof+"-- Contenido carpeta "+carpetaActual.nombre+":");
                     }else{
-                        
                         if(indiceActual == 0){
                             String prof = repeat(espacio,carpetaActual.profundidad);
                             carpetaActual.profundidad = carpetaActual.profundidad;
@@ -2412,6 +2439,7 @@ public class SistemaArchivos {
                         System.out.println(prof+"Carpeta: "+carpetaTemp.nombre);
                     }
                 }else{
+                    entra = false;
                     String prof = repeat(espacio,carpetaActual.carpetaContenedora.profundidad+1);
                     if(carpetaActual.contenido.get(indiceActual).esVinculo){
                         System.out.println(prof+"Vinculo: "+
