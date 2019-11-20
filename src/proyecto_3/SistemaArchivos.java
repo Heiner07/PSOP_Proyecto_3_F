@@ -2005,34 +2005,42 @@ public class SistemaArchivos {
             historialComandos+= cadenaUbicacion + String.join(" ",elementos) +"\n";
             String nombre = elementos[1];
             if(nombreValido(nombre)){
-                if(!elementoRepetidoEnCarpeta(nombre, rutaActual)){
-                    String ruta = elementos[2];
-                    Archivo rutaArchivo;
-                    try{
-                        if(ruta.startsWith("/")){
-                            rutaArchivo = obtenerCarpetaDeRuta(
-                                    cargarCarpetaArchivo(1, true, null), ruta);
-                        }else{
-                            rutaArchivo = obtenerCarpetaDeRuta(rutaActual, ruta);
-                        }
-                        if(rutaArchivo != null){
-                            if(!rutaArchivo.esCarpeta && !rutaArchivo.esVinculo){
-                                if(escribirVinculo(nombre, rutaArchivo, null)){
-                                    System.out.println("¡Vínculo creado!");
+                if(PermisosAbrirCerrar(rutaActual, 2)){
+                    if(!elementoRepetidoEnCarpeta(nombre, rutaActual)){
+                        String ruta = elementos[2];
+                        Archivo rutaArchivo;
+                        try{
+                            if(ruta.startsWith("/")){
+                                rutaArchivo = obtenerCarpetaDeRuta(
+                                        cargarCarpetaArchivo(1, true, null), ruta);
+                            }else{
+                                rutaArchivo = obtenerCarpetaDeRuta(rutaActual, ruta);
+                            }
+                            if(rutaArchivo != null){
+                                if(!rutaArchivo.esCarpeta && !rutaArchivo.esVinculo){
+                                    if(PermisosAbrirCerrar(rutaArchivo, 2)){
+                                        if(escribirVinculo(nombre, rutaArchivo, null)){
+                                            System.out.println("¡Vínculo creado!");
+                                        }else{
+                                            System.out.println("Error al crear el vínculo.");
+                                        }
+                                    }else{
+                                        System.out.println("No tiene permisos sobre ese archivo.");
+                                    }
                                 }else{
-                                    System.out.println("Error al crear el vínculo.");
+                                    System.out.println("No se puede vincular, porque el elemento es un vinculo o carpeta.");
                                 }
                             }else{
-                                System.out.println("No se puede vincular, porque el elemento es un vinculo o carpeta.");
+                                System.out.println("La ruta especificada no existe");
                             }
-                        }else{
-                            System.out.println("La ruta especificada no existe");
+                        }catch(IOException e){
+                            System.out.println("Error leyendo el disco");
                         }
-                    }catch(IOException e){
-                        System.out.println("Error leyendo el disco");
+                    }else{
+                        System.out.println("No se puede crear el vínculo porque ya existe un elemento con ese nombre.");
                     }
                 }else{
-                    System.out.println("No se puede crear el vínculo porque ya existe un elemento con ese nombre.");
+                    System.out.println("No tiene permisos para realizar esta acción en esta carpeta.");
                 }
             }
         }else{
@@ -2153,41 +2161,49 @@ public class SistemaArchivos {
     private void cambiarNombreRutaArchivoCarpeta(String nombre, String nombreRutaNuevo){
         Archivo archivoModificar = obtenerArchivoCarpetaDeCarpeta(rutaActual, nombre);
         if(archivoModificar != null){
-            if(nombreRutaNuevo.contains("/")){
-                Archivo carpetaDestino;
-                try{
-                    if(nombreRutaNuevo.startsWith("/")){
-                        carpetaDestino = obtenerCarpetaDeRuta(
-                                cargarCarpetaArchivo(1, true, null), nombreRutaNuevo);
-                    }else{
-                        carpetaDestino = obtenerCarpetaDeRuta(
-                                rutaActual, nombreRutaNuevo);
-                    }
-                    if(carpetaDestino != null){//comprobar nombre repetido en carpetadestino
-                        if(carpetaDestino.esCarpeta){
-                            if(!elementoRepetidoEnCarpeta(nombre, carpetaDestino)){
-                                moverArchivoCarpeta(
-                                        archivoModificar, carpetaDestino.bloqueInicial);
+            if(PermisosAbrirCerrar(archivoModificar, 2)){
+                if(nombreRutaNuevo.contains("/")){
+                    Archivo carpetaDestino;
+                    try{
+                        if(nombreRutaNuevo.startsWith("/")){
+                            carpetaDestino = obtenerCarpetaDeRuta(
+                                    cargarCarpetaArchivo(1, true, null), nombreRutaNuevo);
+                        }else{
+                            carpetaDestino = obtenerCarpetaDeRuta(
+                                    rutaActual, nombreRutaNuevo);
+                        }
+                        if(carpetaDestino != null){//comprobar nombre repetido en carpetadestino
+                            if(carpetaDestino.esCarpeta){
+                                if(PermisosAbrirCerrar(carpetaDestino, 2)){
+                                    if(!elementoRepetidoEnCarpeta(nombre, carpetaDestino)){
+                                        moverArchivoCarpeta(
+                                                archivoModificar, carpetaDestino.bloqueInicial);
+                                    }else{
+                                        System.out.println("No se puede mover porque ya existe un elemento con el mismo nombre");
+                                    }
+                                }else{
+                                    System.out.println("No tiene permisos sobre la carpeta destino.");
+                                }
                             }else{
-                                System.out.println("No se puede mover porque ya existe un elemento con el mismo nombre");
+                                System.out.println("El elemento destino no es carpeta.");
                             }
                         }else{
-                            System.out.println("El elemento destino no es carpeta.");
+                            System.out.println("El archivo o carpeta no existe.");
                         }
-                    }else{
-                        System.out.println("El archivo o carpeta no existe.");
+                    }catch(IOException e){
+                        System.out.println("Error leyendo el disco.");
                     }
-                }catch(IOException e){
-                    System.out.println("Error leyendo el disco.");
+                }else{
+                    if(nombreValido(nombreRutaNuevo)){
+                        if(!elementoRepetidoEnCarpeta(nombreRutaNuevo, rutaActual)){
+                            cambiarNombreArchivoCarpeta(archivoModificar, nombreRutaNuevo);
+                        }else{
+                            System.out.println("No se puede cambiar porque ya existe un elemento con el mismo nombre.");
+                        }
+                    }
                 }
             }else{
-                if(nombreValido(nombreRutaNuevo)){
-                    if(!elementoRepetidoEnCarpeta(nombreRutaNuevo, rutaActual)){
-                        cambiarNombreArchivoCarpeta(archivoModificar, nombreRutaNuevo);
-                    }else{
-                        System.out.println("No se puede cambiar porque ya existe un elemento con el mismo nombre.");
-                    }
-                }
+                System.out.println("No tiene permisos para realizar esta acción sobre este elemento");
             }
         }else{
             System.out.println("El archivo o carpeta indicado no existe.");
@@ -2637,7 +2653,7 @@ public class SistemaArchivos {
         // Se recarga la carpeta actual para obtener la refencia nueva.
         if(carpetaUsuarios == null ||
                 carpetaUsuarios.bloqueInicial == rutaActual.bloqueInicial){
-            if(rutaActual.carpetaContenedora == null || carpetaUsuarios == null){
+            if(rutaActual.bloqueInicial == 1){
                 rutaActual = cargarCarpetaArchivo(1, true, null);
             }else{
                 String carpetaActual = rutaActual.nombre;

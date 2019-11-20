@@ -209,6 +209,7 @@ public class EstructuraSistemaArchivos {
                 + INICIO_G_USUARIO+"\n"+archivo.grupoUsuarios.id+"\n"+FINAL_G_USUARIO;
         if(archivo.esCarpeta != null &&!archivo.esCarpeta){
             carpetaArchivo += "\n" + INICIO_TEXTO + "\n" + FINAL_TEXTO;
+            
         }
         return carpetaArchivo;
     }
