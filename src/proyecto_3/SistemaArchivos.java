@@ -471,9 +471,9 @@ public class SistemaArchivos {
             while(true){
                 for(; i < cantidadLineas; i++){
                     linea = lineasBloque[i];
-                    if(linea.equals("[S]")){
+                    if(linea.equals("[T]")){
                         leyendoCadena = true;
-                    }else if(linea.equals("[/S]")){
+                    }else if(linea.equals("[/T]")){
                         leyendoCadena = false;
                     }else if(leyendoCadena){
                         cadena += (linea);
@@ -527,22 +527,15 @@ public class SistemaArchivos {
                     }
                     if(archivo.nombre.equals(nombre)){
                         encontroArchivo = true;
-                        if(verificarArchivoAbierto(archivo)){
-                            archivo = cargarCarpetaArchivo(
-                                archivo.bloqueInicial, false,
-                                rutaActual.ubicacion);
-                            if(PermisosAbrirCerrar(archivo,4)){
-                                String cadena = obtenerCadenaLeer(archivo.bloqueInicial);
-                                String st = HexaAString(cadena);
-                                System.out.println(st);
-                            }else System.out.println("No tiene permisos para leer el archivo");
-                        }else{
-                            System.out.println("El archivo o vínculo no está abierto");
-                        }
+                        archivo = cargarCarpetaArchivo(
+                            archivo.bloqueInicial, false,
+                            rutaActual.ubicacion);
+                        if(PermisosAbrirCerrar(archivo,4)){
+                            String cadena = archivo.textoArchivo;
+                            System.out.println(cadena);
+                        }else System.out.println("No tiene permisos para leer el archivo"); 
                     }
                 }
-
-
             }
             if(!encontroArchivo)System.out.println("Archivo o vínculo no existe");
         }catch(Exception e){
@@ -2497,10 +2490,11 @@ public class SistemaArchivos {
         Archivo archivoTemporal = new Archivo(1,true);
         archivoTemporal.profundidad = profundidad;
         carpetaActual.profundidad = profundidad;
-        boolean entra = true;
         if(carpetaActual.bloqueInicial==1){
             carpetaActual.carpetaContenedora = archivoTemporal;
         }
+        String prof = repeat(espacio,carpetaActual.profundidad);
+        System.out.println(prof+"Contenido carpeta: ");
         try{
             while(!carpetasRevisadas.contains(carpeta.bloqueInicial)){
                 indiceFinal = indiceCarpeta.size()-1;
@@ -2510,11 +2504,9 @@ public class SistemaArchivos {
                     indiceCarpeta.remove(indiceFinal);
                     carpetasRevisadas.add(carpetaActual.bloqueInicial);
                     carpetaActual = carpetaActual.carpetaContenedora;
-                    String prof = repeat(espacio,carpetaActual.profundidad);
-                    if(entra)System.out.println(prof+"Contenido carpeta: ");
+                    prof = repeat(espacio,carpetaActual.profundidad);
                     System.out.println(prof+"-- Fin contenido");
                 }else if(carpetaActual.contenido.get(indiceActual).esCarpeta){
-                    entra = false;
                     if(recursivo){
                         bloquePadre = carpetaActual;
                         carpetaActual = cargarCarpetaArchivo(
@@ -2522,13 +2514,13 @@ public class SistemaArchivos {
                                 true, null);
                         indiceCarpeta.add(0);
                         carpetaActual.asignarCarpetaContenedor(bloquePadre);
-                        String prof = repeat(espacio,carpetaActual.carpetaContenedora.profundidad);
+                        prof = repeat(espacio,carpetaActual.carpetaContenedora.profundidad);
                         carpetaActual.profundidad = carpetaActual.carpetaContenedora.profundidad+1;
                         System.out.println(prof+"Carpeta: "+carpetaActual.nombre);
                         System.out.println(prof+"-- Contenido carpeta "+carpetaActual.nombre+":");
                     }else{
                         if(indiceActual == 0){
-                            String prof = repeat(espacio,carpetaActual.profundidad);
+                            prof = repeat(espacio,carpetaActual.profundidad);
                             carpetaActual.profundidad = carpetaActual.profundidad;
                             System.out.println(prof+"Carpeta: "+carpetaActual.nombre);
                             System.out.println(prof+"-- Contenido carpeta "+carpetaActual.nombre+":");
@@ -2536,12 +2528,11 @@ public class SistemaArchivos {
                         carpetaTemp = cargarCarpetaArchivo(
                             carpetaActual.contenido.get(indiceActual).bloqueInicial,
                                 true, null);
-                        String prof = repeat(espacio,carpetaActual.profundidad+1);
+                        prof = repeat(espacio,carpetaActual.profundidad+1);
                         System.out.println(prof+"Carpeta: "+carpetaTemp.nombre);
                     }
                 }else{
-                    entra = false;
-                    String prof = repeat(espacio,carpetaActual.carpetaContenedora.profundidad+1);
+                    prof = repeat(espacio,carpetaActual.carpetaContenedora.profundidad+1);
                     if(carpetaActual.contenido.get(indiceActual).esVinculo){
                         System.out.println(prof+"Vinculo: "+
                                 carpetaActual.contenido.get(indiceActual).nombre);
