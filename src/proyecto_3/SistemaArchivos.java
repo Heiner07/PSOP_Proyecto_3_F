@@ -34,6 +34,7 @@ public class SistemaArchivos {
     int espacioDisponible;
     int cantidadBloques;
     int tamanioBloque;
+    int idArchivoCarpetaProximo;
     Archivo rutaActual; // El archivo (o carpeta) en el que me encuentro
     int cantidadArchivosAbiertos;
     List<Archivo> archivosAbiertos;
@@ -162,7 +163,10 @@ public class SistemaArchivos {
         for(int i=0;i<largoInstrucciones;i++){          
             String tipoInstrucciones = instrucciones.get(i);      
             switch (tipoInstrucciones) {
-                
+                case EstructuraSistemaArchivos.INICIO_IDAC:
+                    i++;
+                    idArchivoCarpetaProximo = Integer.parseInt(instrucciones.get(i));
+                    break;     
                 case EstructuraSistemaArchivos.INICIO_TAMANIO:
                     i++;
                     tamanioDisco = Integer.parseInt(instrucciones.get(i));
@@ -572,7 +576,7 @@ public class SistemaArchivos {
                                 rutaActual.ubicacion);
                             if(PermisosAbrirCerrar(archivo,4)){
                                 cantidadArchivosAbiertos++;
-                                archivosAbiertos.add(new Archivo(archivo.bloqueInicial,vinculoNombre,archivo.esVinculo,null,rutaActual.ubicacion));
+                                archivosAbiertos.add(new Archivo(archivo.bloqueInicial, archivo.id,vinculoNombre,archivo.esVinculo,null,rutaActual.ubicacion));
                                 System.out.println("Archivo abierto");
                             }else System.out.println("No tiene permisos para abrir el archivo");
                         }else{
@@ -1830,12 +1834,17 @@ public class SistemaArchivos {
                         if(!elementoRepetidoEnCarpeta(nombreCarpeta, null)){
                             bloqueLibre = ObtenerBloqueLibre();
                             if(bloqueLibre != -1){
-                                carpetaNueva = new Archivo(0, 0, nombreCarpeta,
+                                carpetaNueva = new Archivo(idArchivoCarpetaProximo++, 0, nombreCarpeta,
                                         rutaActual.ubicacion + nombreCarpeta + "/",
                                         rutaActual.permisos, rutaActual.propietario,
                                         rutaActual.grupoUsuarios, bloqueLibre);
                                 carpetaNueva.esCarpeta = true;
                                 if(escribirCarpetaArchivo(carpetaNueva, true, null)){
+                                    try {
+                                        actualizarIdArchivoCarpetaProximo();
+                                    } catch (IOException ex) {
+                                        System.out.println("Error actualizando el id archivo carpeta.");
+                                    }
                                     System.out.println("¡Carpeta creada!");
                                 }else{
                                     System.out.println("Error al crear la carpeta.");
@@ -2118,12 +2127,17 @@ public class SistemaArchivos {
                         if(!elementoRepetidoEnCarpeta(nombreArchivo, null)){
                             bloqueLibre = ObtenerBloqueLibre();
                             if(bloqueLibre != -1){
-                                archivoNuevo = new Archivo(0, 0, nombreArchivo,
+                                archivoNuevo = new Archivo(idArchivoCarpetaProximo++, 0, nombreArchivo,
                                         rutaActual.ubicacion + nombreArchivo,
                                         rutaActual.permisos, rutaActual.propietario,
                                         rutaActual.grupoUsuarios, bloqueLibre);
                                 archivoNuevo.esCarpeta = false;
                                 if(escribirCarpetaArchivo(archivoNuevo, false, null)){
+                                    try {
+                                        actualizarIdArchivoCarpetaProximo();
+                                    } catch (IOException ex) {
+                                        System.out.println("Error actualizando el id archivo carpeta.");
+                                    }
                                     System.out.println("¡Archivo creado!");
                                 }else{
                                     System.out.println("Error al crear el archivo.");
@@ -2454,6 +2468,11 @@ public class SistemaArchivos {
                     archivoCarpeta = cargarCarpetaArchivo(
                             archivoCarpeta.bloqueInicial, archivoCarpeta.esCarpeta,
                             carpeta.ubicacion);
+                }else{
+                    if(!existeVinculo(archivoCarpeta)){
+                        System.out.println("El archivo vinculado ya no existe.");
+                        return null;
+                    }
                 }
                 if(archivoCarpeta.nombre.equals(nombre)){
                     return archivoCarpeta;
@@ -2463,6 +2482,36 @@ public class SistemaArchivos {
             System.out.println("Error leyendo el disco.");
             return null;
         }return null;
+    }
+    
+    private Boolean existeVinculo(Archivo archivo){
+        if(bloquesLibres.get(archivo.bloqueInicial)==0){
+            return false;
+        }else{
+            try {
+                Bloque bloqueArchivoVinculado = ObtenerBloque(archivo.bloqueInicial);
+                int idArchivoCarpetaVinculado = obtenerIdArchivoCarpetaVinculado(bloqueArchivoVinculado.contenido);
+                return !(idArchivoCarpetaVinculado == -1 || idArchivoCarpetaVinculado != archivo.id);
+            } catch (IOException ex) {
+                System.out.println("Error leyendo el disco");
+                return false;
+            }
+            
+        }
+    }
+    
+    private int obtenerIdArchivoCarpetaVinculado(String bloque){
+        String[] lineas = bloque.split("\n");
+        int cantidadLineas = lineas.length;
+        String linea;
+        for(int i = 0; i < cantidadLineas; i++){
+            linea = lineas[i];
+            if(linea.equals(EstructuraSistemaArchivos.INICIO_IDAC)){
+                i++;
+                linea = lineas[i];
+                return Integer.parseInt(linea);
+            }
+        }return -1;
     }
     
     private void comandoLS(String[] elementos){
@@ -3004,6 +3053,24 @@ public class SistemaArchivos {
         return cadenaFinal;
     }
     
+    private String actualizarIdArchivoCarpetaProximo() throws IOException{
+        Bloque bloque = ObtenerBloque(0);
+        String[] lineasBloque = bloque.contenido.split("\n");
+        int cantidadLineas = lineasBloque.length;
+        String cadenaFinal = "", linea;
+        for(int i = 0; i < cantidadLineas; i++){
+            linea = lineasBloque[i];
+            if(linea.equals(EstructuraSistemaArchivos.INICIO_IDAC)){
+                cadenaFinal += linea + "\n";
+                cadenaFinal += idArchivoCarpetaProximo + "\n";
+                i++;
+            }else{
+                cadenaFinal += linea +  "\n";
+            }
+        }escribirBloque(bloque.id, cadenaFinal);
+        return cadenaFinal;
+    }
+    
     private void actualizarIdSiguienteBloque(Bloque bloque, int id) throws IOException{
         String[] lineasBloque = bloque.contenido.split("\n");
         int cantidadLineas = lineasBloque.length;
@@ -3035,6 +3102,7 @@ public class SistemaArchivos {
         int cantidadLineas;
         int idUsuario, idGrupoUsuario;
         int idArchivoCarpeta;
+        int idUnicoArchivoCarpeta, idUnicoVinculo;
         int bloqueS = 1;
         String linea, nombre, ubicacion, permisos, fechaC, fechaM, nombreVinculo, texto = "";
         List<Archivo> archivos = new ArrayList<>();
@@ -3058,6 +3126,8 @@ public class SistemaArchivos {
         idUsuario = Integer.parseInt(lineasBloque[i]);
         i += 3;
         idGrupoUsuario = Integer.parseInt(lineasBloque[i]);
+        i += 3;
+        idUnicoArchivoCarpeta = Integer.parseInt(lineasBloque[i]);
         
         if(esCarpeta){
             while(true){
@@ -3080,8 +3150,10 @@ public class SistemaArchivos {
                             i++;
                             idArchivoCarpeta = Integer.parseInt(lineasBloque[i]);
                             i++;
+                            idUnicoVinculo = Integer.parseInt(lineasBloque[i]);
+                            i++;
                             nombreVinculo = lineasBloque[i];
-                            archivos.add(new Archivo(idArchivoCarpeta,
+                            archivos.add(new Archivo(idArchivoCarpeta,idUnicoVinculo,
                                     nombreVinculo, true,
                                     new Archivo(bloqueBuscado, true),
                                     ((rutaAnterior != null)? rutaAnterior
@@ -3117,7 +3189,7 @@ public class SistemaArchivos {
             ubicacion = "/";
         }
         
-        carpetaArchivo = new Archivo(0, 0, nombre, ubicacion,
+        carpetaArchivo = new Archivo(idUnicoArchivoCarpeta, 0, nombre, ubicacion,
                 permisos, fechaC, fechaM, usuarios.get(idUsuario),
                 gruposUsuarios.get(idGrupoUsuario), numeroBloque,
                 esCarpeta, archivos,bloqueSD);

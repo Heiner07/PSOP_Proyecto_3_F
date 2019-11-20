@@ -56,6 +56,8 @@ public class EstructuraSistemaArchivos {
     public static final String FINAL_VINCULO            = "[/V]";
     public static final String INICIO_TEXTO             = "[T]";
     public static final String FINAL_TEXTO              = "[/T]";
+    public static final String INICIO_IDAC              = "[IAC]";
+    public static final String FINAL_IDAC               = "[/IAC]";
     public static final String CARACTER_RELLENO         = ".";
     
     /**
@@ -83,6 +85,7 @@ public class EstructuraSistemaArchivos {
                 + INICIO_INFORMACION                                        +"\n"
                 // Se define el Id del bloque
                 + INICIO_ID+"\n0\n"+FINAL_ID                                +"\n"
+                + INICIO_IDAC+"\n3\n"+FINAL_IDAC                            +"\n"
                 // Se define el tamaño del disco (info del sistema de archivos)
                 + INICIO_TAMANIO+"\n"+tamanioDisco+"\n"+FINAL_TAMANIO       +"\n"
                 // Se define la cantidad de bloques y tamaño de cada bloque
@@ -132,6 +135,7 @@ public class EstructuraSistemaArchivos {
                 + INICIO_FECHA_M+"\n"+fechaActual+"\n"+FINAL_FECHA_M+"\n"
                 + INICIO_USUARIO+"\n"+0+"\n"+FINAL_USUARIO+"\n"
                 + INICIO_G_USUARIO+"\n"+0+"\n"+FINAL_G_USUARIO+"\n"
+                + INICIO_IDAC+"\n0\n"+INICIO_IDAC+"\n"
                 + INICIO_CARPETA    + "\n"
                 + "2\n"
                 + FINAL_CARPETA     + "\n"
@@ -153,6 +157,7 @@ public class EstructuraSistemaArchivos {
                 + INICIO_FECHA_M+"\n"+fechaActual+"\n"+FINAL_FECHA_M+"\n"
                 + INICIO_USUARIO+"\n"+0+"\n"+FINAL_USUARIO+"\n"
                 + INICIO_G_USUARIO+"\n"+0+"\n"+FINAL_G_USUARIO+"\n"
+                + INICIO_IDAC+"\n1\n"+INICIO_IDAC+"\n"
                 + FINAL_INFORMACION                 + "\n"
                 + FINAL_BLOQUE                      + "\n";
         // Se crea el bloque con la carpeta users
@@ -168,6 +173,7 @@ public class EstructuraSistemaArchivos {
                 + INICIO_FECHA_M+"\n"+fechaActual+"\n"+FINAL_FECHA_M+"\n"
                 + INICIO_USUARIO+"\n"+0+"\n"+FINAL_USUARIO+"\n"
                 + INICIO_G_USUARIO+"\n"+0+"\n"+FINAL_G_USUARIO+"\n"
+                + INICIO_IDAC+"\n2\n"+INICIO_IDAC+"\n"
                 + FINAL_INFORMACION                 + "\n"
                 + FINAL_BLOQUE                      + "\n";
         // Se crean el resto de bloques (libres)
@@ -206,7 +212,8 @@ public class EstructuraSistemaArchivos {
                 // Se establece el usuario propietario.
                 + INICIO_USUARIO+"\n"+archivo.propietario.id+"\n"+FINAL_USUARIO+"\n"
                 // Se establece el grupo de usuario del archivo
-                + INICIO_G_USUARIO+"\n"+archivo.grupoUsuarios.id+"\n"+FINAL_G_USUARIO;
+                + INICIO_G_USUARIO+"\n"+archivo.grupoUsuarios.id+"\n"+FINAL_G_USUARIO+"\n"
+                + INICIO_IDAC+"\n"+archivo.id+"\n"+INICIO_IDAC;
         if(archivo.esCarpeta != null &&!archivo.esCarpeta){
             carpetaArchivo += "\n" + INICIO_TEXTO + "\n" + FINAL_TEXTO;
             
@@ -226,6 +233,7 @@ public class EstructuraSistemaArchivos {
         String referencia
                 = INICIO_VINCULO        + "\n"
                 + archivo.bloqueInicial + "\n"
+                + archivo.id            + "\n"
                 + nombreVinculo         + "\n"
                 + FINAL_VINCULO;
         return referencia;

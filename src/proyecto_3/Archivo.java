@@ -135,7 +135,8 @@ public class Archivo {
         this.guardar = false;
     }
     
-    public Archivo(int bloque, String nombre, Boolean esVinculo, Archivo padre, String ubicacion){
+    public Archivo(int bloque, int idUnico, String nombre, Boolean esVinculo, Archivo padre, String ubicacion){
+        this.id = idUnico;
         this.bloqueInicial = bloque;
         this.nombre = nombre;
         this.ubicacion = ubicacion;
