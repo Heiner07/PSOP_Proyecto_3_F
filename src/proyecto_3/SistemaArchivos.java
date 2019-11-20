@@ -492,6 +492,11 @@ public class SistemaArchivos {
                         archivo = cargarCarpetaArchivo(
                                 archivo.bloqueInicial, false,
                                 rutaActual.ubicacion);
+                    }else{
+                        if(!existeVinculo(archivo)){
+                            System.out.println("El archivo vinculado no existe.");
+                            return;
+                        }
                     }
                     if(archivo.nombre.equals(nombre)){
                         encontroArchivo = true;
