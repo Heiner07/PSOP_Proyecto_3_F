@@ -888,11 +888,6 @@ public class SistemaArchivos {
         if(elementos.length > 1){
             historialComandos+= cadenaUbicacion + String.join(" ",elementos) +"\n";
             usuarioTem = obtenerUsuario(elementos[1]);
-            if(usuarioTem != null){
-                usuarioActual = usuarioTem;
-            }else{
-                System.out.println("El usuario no existe");
-            }
         }else{
             usuarioTem = usuarios.get(0);
         }
@@ -905,6 +900,8 @@ public class SistemaArchivos {
             }else{
                 System.out.println("La contraseña no es correcta.");
             }
+        }else{
+            System.out.println("El usuario no existe");
         }
     }
     
@@ -1821,30 +1818,34 @@ public class SistemaArchivos {
         int cantidadElementos = elementos.length;
         if(cantidadElementos > 1){
             historialComandos+= cadenaUbicacion + String.join(" ",elementos) +"\n";
-            String nombreCarpeta;
-            int bloqueLibre;
-            Archivo carpetaNueva;
-            for(int i = 1; i < cantidadElementos; i++){
-                nombreCarpeta = elementos[i];
-                if(nombreValido(nombreCarpeta)){
-                    if(!elementoRepetidoEnCarpeta(nombreCarpeta, null)){
-                        bloqueLibre = ObtenerBloqueLibre();
-                        if(bloqueLibre != -1){
-                            carpetaNueva = new Archivo(0, 0, nombreCarpeta,
-                                    rutaActual.ubicacion + nombreCarpeta + "/",
-                                    rutaActual.permisos, rutaActual.propietario,
-                                    rutaActual.grupoUsuarios, bloqueLibre);
-                            carpetaNueva.esCarpeta = true;
-                            if(escribirCarpetaArchivo(carpetaNueva, true, null)){
-                                System.out.println("¡Carpeta creada!");
+            if(PermisosAbrirCerrar(rutaActual, 2)){
+                String nombreCarpeta;
+                int bloqueLibre;
+                Archivo carpetaNueva;
+                for(int i = 1; i < cantidadElementos; i++){
+                    nombreCarpeta = elementos[i];
+                    if(nombreValido(nombreCarpeta)){
+                        if(!elementoRepetidoEnCarpeta(nombreCarpeta, null)){
+                            bloqueLibre = ObtenerBloqueLibre();
+                            if(bloqueLibre != -1){
+                                carpetaNueva = new Archivo(0, 0, nombreCarpeta,
+                                        rutaActual.ubicacion + nombreCarpeta + "/",
+                                        rutaActual.permisos, rutaActual.propietario,
+                                        rutaActual.grupoUsuarios, bloqueLibre);
+                                carpetaNueva.esCarpeta = true;
+                                if(escribirCarpetaArchivo(carpetaNueva, true, null)){
+                                    System.out.println("¡Carpeta creada!");
+                                }else{
+                                    System.out.println("Error al crear la carpeta.");
+                                }
                             }else{
-                                System.out.println("Error al crear la carpeta.");
+                                System.out.println("Error no hay espacio.");
                             }
-                        }else{
-                            System.out.println("Error no hay espacio.");
                         }
                     }
                 }
+            }else{
+                System.out.println("No tiene permisos para realizar esta acción");
             }
         }else{
             System.out.println("Especifique un nombre de carpeta");
@@ -2097,30 +2098,34 @@ public class SistemaArchivos {
         int cantidadElementos = elementos.length;
         if(cantidadElementos > 1){
             historialComandos+= cadenaUbicacion + String.join(" ",elementos) +"\n";
-            String nombreArchivo;
-            int bloqueLibre;
-            Archivo archivoNuevo;
-            for(int i = 1; i < cantidadElementos; i++){
-                nombreArchivo = elementos[i];
-                if(nombreValido(nombreArchivo)){
-                    if(!elementoRepetidoEnCarpeta(nombreArchivo, null)){
-                        bloqueLibre = ObtenerBloqueLibre();
-                        if(bloqueLibre != -1){
-                            archivoNuevo = new Archivo(0, 0, nombreArchivo,
-                                    rutaActual.ubicacion + nombreArchivo,
-                                    rutaActual.permisos, rutaActual.propietario,
-                                    rutaActual.grupoUsuarios, bloqueLibre);
-                            archivoNuevo.esCarpeta = false;
-                            if(escribirCarpetaArchivo(archivoNuevo, false, null)){
-                                System.out.println("¡Archivo creado!");
+            if(PermisosAbrirCerrar(rutaActual, 2)){
+                String nombreArchivo;
+                int bloqueLibre;
+                Archivo archivoNuevo;
+                for(int i = 1; i < cantidadElementos; i++){
+                    nombreArchivo = elementos[i];
+                    if(nombreValido(nombreArchivo)){
+                        if(!elementoRepetidoEnCarpeta(nombreArchivo, null)){
+                            bloqueLibre = ObtenerBloqueLibre();
+                            if(bloqueLibre != -1){
+                                archivoNuevo = new Archivo(0, 0, nombreArchivo,
+                                        rutaActual.ubicacion + nombreArchivo,
+                                        rutaActual.permisos, rutaActual.propietario,
+                                        rutaActual.grupoUsuarios, bloqueLibre);
+                                archivoNuevo.esCarpeta = false;
+                                if(escribirCarpetaArchivo(archivoNuevo, false, null)){
+                                    System.out.println("¡Archivo creado!");
+                                }else{
+                                    System.out.println("Error al crear el archivo.");
+                                }
                             }else{
-                                System.out.println("Error al crear el archivo.");
+                                System.out.println("Error no hay espacio.");
                             }
-                        }else{
-                            System.out.println("Error no hay espacio.");
                         }
                     }
                 }
+            }else{
+                System.out.println("No tiene permisos para realizar esta acción");
             }
         }else{
             System.out.println("Especifique un nombre de archivo");
