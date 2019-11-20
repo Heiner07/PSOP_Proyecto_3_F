@@ -184,7 +184,7 @@ public class SistemaArchivos {
             }
         
         }
-        imprimirDatos();
+        //imprimirDatos();
     }
     
    
@@ -1121,7 +1121,6 @@ public class SistemaArchivos {
         List<Archivo> archivos;
         List<Archivo> archivosRetornar = new ArrayList<>();
         int indice = 1;
-        System.out.println(Arrays.toString(rutas));
         if(rutas.length == 0)return archivosRetornar;
         try {
             archivos = obtenerSoloArchivos(obtenerArchivoPorCadena(rutas[indice]));
