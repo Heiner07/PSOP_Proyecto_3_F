@@ -760,25 +760,27 @@ public class SistemaArchivos {
      */
     private void comandoGroupAdd(String[] elementos){
         if(elementos.length > 1){
-            String nombreGrupo;
-            historialComandos+= cadenaUbicacion + String.join(" ",elementos) +"\n";
-            nombreGrupo = elementos[1];
-            if(nombreValido(nombreGrupo)){
-                if(!grupoRepetido(nombreGrupo)){
-                    GrupoUsuarios grupoNuevo = new GrupoUsuarios(gruposUsuarios.size(),nombreGrupo, null);
-                    if(escribirGrupoUsuario(grupoNuevo)){
-                        gruposUsuarios.add(grupoNuevo);
-                        System.out.println("¡Grupo agregado!");
+            if(usuarioActual.id==0){
+                String nombreGrupo;
+                historialComandos+= cadenaUbicacion + String.join(" ",elementos) +"\n";
+                nombreGrupo = elementos[1];
+                if(nombreValido(nombreGrupo)){
+                    if(!grupoRepetido(nombreGrupo)){
+                        GrupoUsuarios grupoNuevo = new GrupoUsuarios(gruposUsuarios.size(),nombreGrupo, null);
+                        if(escribirGrupoUsuario(grupoNuevo)){
+                            gruposUsuarios.add(grupoNuevo);
+                            System.out.println("¡Grupo agregado!");
+                        }else{
+                            System.out.println("Error al agregar el grupo");
+                        }
                     }else{
-                        System.out.println("Error al agregar el grupo");
+                        System.out.println("El nombre de grupo ya existe.");
                     }
-                }else{
-                    System.out.println("El nombre de grupo ya existe.");
                 }
-            }
-        }else{
-            System.out.println("Especifique un nombre de grupo.");
-        }
+                }else{
+                    System.out.println("Especifique un nombre de grupo.");
+                }
+            }else System.out.println("Debe ser root");
     }
     
     private Boolean grupoRepetido(String grupo){
@@ -1618,10 +1620,10 @@ public class SistemaArchivos {
             Archivo nuevoArchivo = obtenerArchivoCarpetaDeCarpeta(rutaActual, elementos[1]);
             if(nuevoArchivo != null && !nuevoArchivo.esCarpeta){
                 if(verificarArchivoAbierto(nuevoArchivo)){
-                    if(verificarPermisosEscribir(nuevoArchivo)){
+                    
                         historialComandos+= cadenaUbicacion + String.join(" ",elementos) +"\n";
                        cargarArchivoEnEditor(nuevoArchivo);
-                    }else System.out.println("No tiene los permisos de escritura");
+                    
                 }else System.out.println("El archivo no está abierto");
             }else{
                 System.out.println("No existe un archivo con ese nombre.");
@@ -1635,12 +1637,14 @@ public class SistemaArchivos {
         Archivo archivoCargado;
         try{
             archivoCargado = cargarCarpetaArchivo(archivoCargar.bloqueInicial, false, rutaActual.ubicacion);
-            EditorTexto editor = new EditorTexto(null, true, archivoCargado);
-            editor.setVisible(true);
-            if(archivoCargado.guardar){
-                // llamar a funcion para guardar el archivo con los cambios.
-                guardarCambiosArchivo(archivoCargado);
-            }
+            if(verificarPermisosEscribir(archivoCargado)){
+                EditorTexto editor = new EditorTexto(null, true, archivoCargado);
+                editor.setVisible(true);
+                if(archivoCargado.guardar){
+                    // llamar a funcion para guardar el archivo con los cambios.
+                    guardarCambiosArchivo(archivoCargado);
+                }
+            }else System.out.println("No tiene los permisos de escritura");
         }catch(IOException e){
             System.out.println("Error cargando el archivo");
         }
