@@ -2641,7 +2641,7 @@ public class SistemaArchivos {
         // Se recarga la carpeta actual para obtener la refencia nueva.
         if(carpetaUsuarios == null ||
                 carpetaUsuarios.bloqueInicial == rutaActual.bloqueInicial){
-            if(rutaActual.carpetaContenedora == null){
+            if(rutaActual.carpetaContenedora == null || carpetaUsuarios == null){
                 rutaActual = cargarCarpetaArchivo(1, true, null);
             }else{
                 String carpetaActual = rutaActual.nombre;
