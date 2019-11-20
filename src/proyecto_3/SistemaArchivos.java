@@ -2179,7 +2179,7 @@ public class SistemaArchivos {
     private void cambiarNombreRutaArchivoCarpeta(String nombre, String nombreRutaNuevo){
         Archivo archivoModificar = obtenerArchivoCarpetaDeCarpeta(rutaActual, nombre);
         if(archivoModificar != null){
-            if(PermisosAbrirCerrar(archivoModificar, 2)){
+            if(archivoModificar.esVinculo || PermisosAbrirCerrar(archivoModificar, 2)){
                 if(nombreRutaNuevo.contains("/")){
                     Archivo carpetaDestino;
                     try{
