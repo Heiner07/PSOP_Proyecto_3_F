@@ -54,6 +54,8 @@ public class EstructuraSistemaArchivos {
     public static final String FINAL_ARCHIVO            = "[/A]";
     public static final String INICIO_VINCULO           = "[V]";
     public static final String FINAL_VINCULO            = "[/V]";
+    public static final String INICIO_TEXTO             = "[T]";
+    public static final String FINAL_TEXTO              = "[/T]";
     public static final String CARACTER_RELLENO         = ".";
     
     /**
@@ -205,6 +207,9 @@ public class EstructuraSistemaArchivos {
                 + INICIO_USUARIO+"\n"+archivo.propietario.id+"\n"+FINAL_USUARIO+"\n"
                 // Se establece el grupo de usuario del archivo
                 + INICIO_G_USUARIO+"\n"+archivo.grupoUsuarios.id+"\n"+FINAL_G_USUARIO;
+        if(!archivo.esCarpeta){
+            carpetaArchivo += "\n" + INICIO_TEXTO + "\n" + FINAL_TEXTO;
+        }
         return carpetaArchivo;
     }
     

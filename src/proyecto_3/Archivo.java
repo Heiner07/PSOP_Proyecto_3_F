@@ -29,6 +29,7 @@ public class Archivo {
     Boolean esVinculo;
     Boolean esCarpeta;
     Boolean estaAbierto;
+    Boolean guardar;//Usada para saber si después de editar debo guardar
     Archivo carpetaContenedora;
     List<Archivo> contenido;
     int bloqueS;
@@ -67,6 +68,7 @@ public class Archivo {
         this.esCarpeta = esCarpeta;
         this.esVinculo = false;
         this.estaAbierto = false;
+        this.guardar = false;
         this.contenido = contenido;
         this.carpetaContenedora = null;
         this.bloqueS = bloqueS;
@@ -105,6 +107,7 @@ public class Archivo {
         this.esCarpeta = esCarpeta;
         this.esVinculo = false;
         this.estaAbierto = false;
+        this.guardar = false;
         this.contenido = null;
         this.textoArchivo = contenido;
         this.carpetaContenedora = null;
@@ -122,12 +125,14 @@ public class Archivo {
         this.grupoUsuarios = grupoUsuarios;
         this.bloqueInicial = bloque;
         this.carpetaContenedora = null;
+        this.guardar = false;
     }
     
     public Archivo(int bloque, Boolean esCarpeta){
         this.bloqueInicial = bloque;
         this.esCarpeta = esCarpeta;
         this.esVinculo = false;
+        this.guardar = false;
     }
     
     public Archivo(int bloque, String nombre, Boolean esVinculo, Archivo padre, String ubicacion){
@@ -135,6 +140,7 @@ public class Archivo {
         this.nombre = nombre;
         this.ubicacion = ubicacion;
         this.esCarpeta = false;
+        this.guardar = false;
         this.esVinculo = esVinculo;
         this.carpetaContenedora = padre;
     }

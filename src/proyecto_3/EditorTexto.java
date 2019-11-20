@@ -152,6 +152,7 @@ public class EditorTexto extends javax.swing.JDialog {
         if(saliendo){
             if(evt.getKeyCode() == KeyEvent.VK_S){
                 archivo.textoArchivo = taTextoEditando.getText();
+                archivo.guardar = true;
             }this.dispose();
         }else if(evt.isControlDown() && evt.getKeyCode() == KeyEvent.VK_X){
             saliendo = true;

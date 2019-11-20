@@ -497,17 +497,22 @@ public class SistemaArchivos {
     }
     
     
-    public static String unHex(String arg) {        
+    public static String stringAHexa(byte[] bytes) {
+        StringBuilder str = new StringBuilder();
+        int largo = bytes.length;
+        for(int i = 0; i < largo; i++)
+            str.append(String.format("%02x", bytes[i]));
+        return str.toString();
+    }
 
-    String str = "";
-    for(int i=0;i<arg.length();i+=2)
-    {
-        String s = arg.substring(i, (i + 2));
-        int decimal = Integer.parseInt(s, 16);
-        str = str + (char) decimal;
-    }       
-    return str;
-}
+    public static String HexaAString(String hex) {
+        StringBuilder str = new StringBuilder();
+        for (int i = 0; i < hex.length(); i+=2) {
+            str.append((char) Integer.parseInt(hex.substring(i, i + 2), 16));
+        }
+        return str.toString();
+    }
+    
     private void leerArchivo(String nombre){
         int largoContenido = rutaActual.contenido.size();
         boolean encontroArchivo = false;
@@ -528,7 +533,7 @@ public class SistemaArchivos {
                                 rutaActual.ubicacion);
                             if(PermisosAbrirCerrar(archivo)){
                                 String cadena = obtenerCadenaLeer(archivo.bloqueInicial);
-                                String st = unHex(cadena);
+                                String st = HexaAString(cadena);
                                 System.out.println(st);
                             }else System.out.println("No tiene permisos para leer el archivo");
                         }else{
@@ -1650,9 +1655,56 @@ public class SistemaArchivos {
             archivoCargado = cargarCarpetaArchivo(archivoCargar.bloqueInicial, false, rutaActual.ubicacion);
             EditorTexto editor = new EditorTexto(null, true, archivoCargado);
             editor.setVisible(true);
-            // llamar a funcion para guardar el archivo con los cambios.
+            if(archivoCargado.guardar){
+                // llamar a funcion para guardar el archivo con los cambios.
+                guardarCambiosArchivo(archivoCargado);
+            }
         }catch(IOException e){
             System.out.println("Error cargando el archivo");
+        }
+    }
+    
+    private void guardarCambiosArchivo(Archivo archivo){
+        String bloqueNuevo = agregarTextoNuevoBloqueArchivo(archivo);
+        if(hayEspacioEnBloque(archivo.bloqueInicial, bloqueNuevo)){
+            try {
+                //BInicial deberia ser siguiente
+                escribirBloque(archivo.bloqueInicial, bloqueNuevo);
+                System.out.println("Archivo guardado.");
+            } catch (IOException ex) {
+                System.out.println("Error escribiendo el archivo.");
+            }
+        }else{
+            System.out.println("No hay espacio para escribir el texto.");
+        }
+    }
+    
+    private String agregarTextoNuevoBloqueArchivo(Archivo archivo){
+        Bloque bloqueArchivo;
+        String[] contenidoBloque;
+        String contenidoNuevo = stringAHexa(archivo.textoArchivo.getBytes());
+        int lineasBloque;
+        String bloqueNuevo = "", linea;
+        try {
+            bloqueArchivo = ObtenerBloque(archivo.bloqueInicial);
+            contenidoBloque = bloqueArchivo.contenido.split("\n");
+            lineasBloque = contenidoBloque.length;
+            for(int i = 0; i < lineasBloque; i++){
+                linea = contenidoBloque[i];
+                bloqueNuevo += linea + "\n";
+                if(linea.equals(EstructuraSistemaArchivos.INICIO_TEXTO)){
+                    bloqueNuevo += contenidoNuevo + "\n";
+                    i++;
+                    linea = contenidoBloque[i];
+                    if(linea.equals(EstructuraSistemaArchivos.FINAL_TEXTO)){
+                        bloqueNuevo += linea + "\n";
+                    }
+                }
+                
+            }return bloqueNuevo;
+        } catch (IOException ex) {
+            System.out.println("Error leyendo el disco.");
+            return null;
         }
     }
     
@@ -1782,6 +1834,7 @@ public class SistemaArchivos {
                                     rutaActual.ubicacion + nombreCarpeta + "/",
                                     rutaActual.permisos, rutaActual.propietario,
                                     rutaActual.grupoUsuarios, bloqueLibre);
+                            carpetaNueva.esCarpeta = true;
                             if(escribirCarpetaArchivo(carpetaNueva, true, null)){
                                 System.out.println("¡Carpeta creada!");
                             }else{
@@ -2057,6 +2110,7 @@ public class SistemaArchivos {
                                     rutaActual.ubicacion + nombreArchivo,
                                     rutaActual.permisos, rutaActual.propietario,
                                     rutaActual.grupoUsuarios, bloqueLibre);
+                            archivoNuevo.esCarpeta = false;
                             if(escribirCarpetaArchivo(archivoNuevo, false, null)){
                                 System.out.println("¡Archivo creado!");
                             }else{
@@ -2799,8 +2853,11 @@ public class SistemaArchivos {
      * @return Boolean
      */
     private Boolean hayEspacioEnBloque(Bloque bloque, String contenBloqueNuevo){
+        return hayEspacioEnBloque(bloque.bloqueSiguiente, contenBloqueNuevo);
+    }
+    private Boolean hayEspacioEnBloque(int bloqueSiguiente, String contenBloqueNuevo){
         // Se reservan 80 bytes para almacenar los carácteres del valor máximo de int
-        int tamanioReservaIdS = 80 - String.valueOf(bloque.bloqueSiguiente).getBytes().length;
+        int tamanioReservaIdS = 80 - String.valueOf(bloqueSiguiente).getBytes().length;
         return contenBloqueNuevo.getBytes().length + tamanioReservaIdS < tamanioBloque;
     }
     
@@ -2953,7 +3010,7 @@ public class SistemaArchivos {
         int idUsuario, idGrupoUsuario;
         int idArchivoCarpeta;
         int bloqueS = 1;
-        String linea, nombre, ubicacion, permisos, fechaC, fechaM, nombreVinculo;
+        String linea, nombre, ubicacion, permisos, fechaC, fechaM, nombreVinculo, texto = "";
         List<Archivo> archivos = new ArrayList<>();
         // Se obtiene la información de la carpeta o archivo.
         bloqueCarpeta = ObtenerBloque(bloqueBuscado);
@@ -3020,7 +3077,8 @@ public class SistemaArchivos {
             }
             
         }else{
-            
+            i += 3;
+            texto = lineasBloque[i];
         }
         
         // Genero la ruta del archivo o carpeta.
@@ -3037,6 +3095,13 @@ public class SistemaArchivos {
                 permisos, fechaC, fechaM, usuarios.get(idUsuario),
                 gruposUsuarios.get(idGrupoUsuario), numeroBloque,
                 esCarpeta, archivos,bloqueSD);
+        if(!esCarpeta){
+            if(!texto.equals(EstructuraSistemaArchivos.FINAL_TEXTO)){
+                carpetaArchivo.textoArchivo = HexaAString(texto);
+            }else{
+                carpetaArchivo.textoArchivo = "";
+            }
+        }
         
         return carpetaArchivo;
     }
